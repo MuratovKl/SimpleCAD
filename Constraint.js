@@ -1,10 +1,10 @@
 class Constraint {
   static curId = 0;
 
-  constructor(type, points, id) {
+  constructor(type, points) {
     this._type = type;
-    this._points = points;
-    this._id = curId++;
+    this._points = points; // TODO maybe only IDs?
+    this._id = Constraint.curId++;
   }
 
   get type() {
@@ -19,3 +19,5 @@ class Constraint {
     return this._id;
   }
 }
+
+export { Constraint };
