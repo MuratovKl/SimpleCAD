@@ -8,14 +8,19 @@ import { Constraint } from "../Constraint.js";
  * @param {Constraint} constraint 
  * @returns {Object} Object with axis names, local Jacobian and local vector F
  */
-function getDerivativeFunction_Horizontal(constraint) {
+function getDerivativeFunction_Horizontal(constraint, unknowns, axisGlobal) {
+    const dim = 3;
+
     const axisLocal = [];
     axisLocal.push("lambda_" + constraint.id);
-    for (let point of constraint.points) {
-        axisLocal.push("dy_" + point.id);
+    for (let i = 0; i < constraint.points.length; i++) {
+        axisLocal.push("dy_" + constraint.points[i].id);
+    }
+    const localToGlobal = new Array(dim);
+    for (let i = 0; i < dim; i++) {
+        localToGlobal[i] = axisGlobal.indexOf(axisLocal[i]);
     }
 
-    const dim = 3;
     const JacobianLocal = new Array(dim);
     const F_Local = new Array(dim);
     for (let i = 0; i < dim; i++) {
@@ -31,17 +36,16 @@ function getDerivativeFunction_Horizontal(constraint) {
     JacobianLocal[1][0] = -1;
     JacobianLocal[2][0] = 1;
 
-    // TODO current values for `lambda` and `dy_i`
     const y1 = constraint.points[0].y;
     const y2 = constraint.points[1].y;
-    const dy1 = 0;
-    const dy2 = 0;
-    const lambda = 0;
+    const lambda = unknowns[localToGlobal[0]];
+    const dy1 = unknowns[localToGlobal[1]];
+    const dy2 = unknowns[localToGlobal[2]];
     F_Local[0] = y2 + dy2 - y1 - dy1;
     F_Local[1] = -lambda; // -l
     F_Local[2] = lambda; // +l
 
-    return({axisLocal, JacobianLocal, F_Local, dim});
+    return({axisLocal, JacobianLocal, F_Local, dim, localToGlobal});
 }
 
 /**
@@ -51,15 +55,20 @@ function getDerivativeFunction_Horizontal(constraint) {
  * @param {Constraint} constraint 
  * @returns {Object} Object with axis names, local Jacobian and local vector F
  */
-function getDerivativeFunction_Length(constraint) {
+function getDerivativeFunction_Length(constraint, unknowns, axisGlobal) {
+    const dim = 5;
+
     const axisLocal = [];
     axisLocal.push("lambda_" + constraint.id);
-    for (let point of constraint.points) {
-        axisLocal.push("dx_" + point.id);
-        axisLocal.push("dy_" + point.id);
+    for (let i = 0; i < constraint.points.length; i++) {
+        axisLocal.push("dx_" + constraint.points[i].id);
+        axisLocal.push("dy_" + constraint.points[i].id);
+    }
+    const localToGlobal = new Array(dim);
+    for (let i = 0; i < dim; i++) {
+        localToGlobal[i] = axisGlobal.indexOf(axisLocal[i]);
     }
 
-    const dim = 5;
     const JacobianLocal = new Array(dim);
     const F_Local = new Array(dim);
     for (let i = 0; i < dim; i++) {
@@ -75,12 +84,12 @@ function getDerivativeFunction_Length(constraint) {
     const x2 = constraint.points[1].x;
     const y2 = constraint.points[1].y;
 
-    // TODO Set val for dx_i, dy_i, lambda
-    const dx1 = 0;
-    const dy1 = 0;
-    const dx2 = 0;
-    const dy2 = 0;
-    const lambda = 0;
+    const lambda = unknowns[localToGlobal[0]];
+    const dx1 = unknowns[localToGlobal[1]];
+    const dy1 = unknowns[localToGlobal[2]];
+    const dx2 = unknowns[localToGlobal[3]];
+    const dy2 = unknowns[localToGlobal[4]];
+
     const length = constraint.value;
 
     JacobianLocal[0][0] = 0; // 0
@@ -119,7 +128,7 @@ function getDerivativeFunction_Length(constraint) {
     F_Local[3] = 2 * lambda * (x2+dx2 - x1-dx1);
     F_Local[4] = 2 * lambda * (y2+dy2 - y1-dy1);
 
-    return({axisLocal, JacobianLocal, F_Local, dim});
+    return({axisLocal, JacobianLocal, F_Local, dim, localToGlobal});
 }
 
 export { getDerivativeFunction_Horizontal, getDerivativeFunction_Length };

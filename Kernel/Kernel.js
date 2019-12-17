@@ -31,22 +31,25 @@ class Kernel {
         const F = new Array(arraySize);
         this._fillVectorWithNumber(F, arraySize, 0);
 
-        this._fillJacobianAndFbyConstraints(Jacobian, F, axis_Global, constraints);
+        const unknowns = new Array(arraySize);
+        this._fillVectorWithNumber(unknowns, arraySize, 0);
+
+        this._fillJacobianAndFbyConstraints(Jacobian, F, axis_Global, constraints, unknowns);
 
         console.log(axis_Global);
         console.log({Jacobian});
         console.log({F});
     }
 
-    _fillJacobianAndFbyConstraints(Jacobian, F, globalAxis, constraints) {
+    _fillJacobianAndFbyConstraints(Jacobian, F, globalAxis, constraints, unknowns) {
         for (let constraint of constraints) {
             let constraintFunction;
             switch (constraint.type) {
                 case 'horizontal':
-                    constraintFunction = getDerivativeFunction_Horizontal(constraint);
+                    constraintFunction = getDerivativeFunction_Horizontal(constraint, unknowns, globalAxis);
                     break;
                 case 'length':
-                    constraintFunction = getDerivativeFunction_Length(constraint);
+                    constraintFunction = getDerivativeFunction_Length(constraint, unknowns, globalAxis);
                     break;
 
                 default:
@@ -62,19 +65,16 @@ class Kernel {
         for (let k = constraints.length; k < globalAxis.length; k++) {
             Jacobian[k][k] += 1;
         }
-        // TODO add +dx_i and +dy_i in F[i]
-        // for (let k = constraints.length; k < globalAxis.length; k++) {
-            
-        // }
+        // add +dx_i and +dy_i in F[i]
+        for (let k = constraints.length; k < globalAxis.length; k++) {
+            F[k] += unknowns[k];
+        }
     }
 
     // Ансамблирование общей и локальной матиц
     _fillGlobalByLocal(globalJacobian, globalF, globalAxis, constraintFunction) {
         // Получение соответвия локальных и глобальных индексов
-        const localToGlobal = new Array(constraintFunction.dim);
-        for (let i = 0; i < constraintFunction.dim; i++) {
-            localToGlobal[i] = globalAxis.indexOf(constraintFunction.axisLocal[i]);
-        }
+        const localToGlobal = constraintFunction.localToGlobal;
 
         // Jacobian
         for (let i = 0; i < constraintFunction.dim; i++) {
