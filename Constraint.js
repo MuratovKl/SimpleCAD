@@ -3,8 +3,16 @@ class Constraint {
 
   constructor(type, points) {
     this._type = type;
-    this._points = points; // TODO maybe only IDs?
+    this._points = points;
     this._id = Constraint.curId++;
+  }
+
+  set value(val) {
+    this._value = val;
+  }
+
+  get value() {
+    return this._value;
   }
 
   get type() {
