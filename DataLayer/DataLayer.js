@@ -4,6 +4,7 @@ class DataLayer {
     this._constrains = [];
     this._kernel = kernel;
   }
+
   get points() {
     return this._points;
   }
@@ -17,14 +18,15 @@ class DataLayer {
     this._constraints.push(constraint);
 
     try {
-      kernel.solve(this._points, this._constraints);
-    } catch(e) {
+      this._kernel.solve(this._points, this._constraints);
+    } catch (e) {
+      // eslint-disable-next-line
       console.error(e.message);
       this._constrains.pop();
     }
   }
-
-
-
-
 }
+
+export {
+  DataLayer,
+};
