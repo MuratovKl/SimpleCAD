@@ -1,4 +1,5 @@
 class Constraint {
+  // eslint-disable-next-line
   static curId = 0;
 
   constructor(type, points) {

@@ -1,6 +1,3 @@
-import { Constraint } from "../Constraint.js";
-
-
 /**
  * Function for Horizontal constraint. 
  * This function fill local matrix J and vector F.
@@ -12,9 +9,9 @@ function getDerivativeFunction_Horizontal(constraint, unknowns, axisGlobal) {
     const dim = 3;
 
     const axisLocal = [];
-    axisLocal.push("lambda_" + constraint.id);
+    axisLocal.push('lambda_' + constraint.id);
     for (let i = 0; i < constraint.points.length; i++) {
-        axisLocal.push("dy_" + constraint.points[i].id);
+        axisLocal.push('dy_' + constraint.points[i].id);
     }
     const localToGlobal = new Array(dim);
     for (let i = 0; i < dim; i++) {
@@ -59,10 +56,10 @@ function getDerivativeFunction_Length(constraint, unknowns, axisGlobal) {
     const dim = 5;
 
     const axisLocal = [];
-    axisLocal.push("lambda_" + constraint.id);
+    axisLocal.push('lambda_' + constraint.id);
     for (let i = 0; i < constraint.points.length; i++) {
-        axisLocal.push("dx_" + constraint.points[i].id);
-        axisLocal.push("dy_" + constraint.points[i].id);
+        axisLocal.push('dx_' + constraint.points[i].id);
+        axisLocal.push('dy_' + constraint.points[i].id);
     }
     const localToGlobal = new Array(dim);
     for (let i = 0; i < dim; i++) {

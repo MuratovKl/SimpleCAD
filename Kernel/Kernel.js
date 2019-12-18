@@ -1,6 +1,5 @@
-import { PointUsedInConstraints } from './PointUsedInConstraints.js'
-import { getDerivativeFunction_Horizontal, getDerivativeFunction_Length } from './constraintFunctions.js'
-
+import { PointUsedInConstraints } from './PointUsedInConstraints.js';
+import { getDerivativeFunction_Horizontal, getDerivativeFunction_Length } from './constraintFunctions.js';
 /**
  * Kernel of CAD system
  */
@@ -16,29 +15,197 @@ class Kernel {
     slove(points, constraints) {
         
         const pointsUsedInConstraints = [];
-        this._pointsUsedInConstraints(pointsUsedInConstraints, constraints)
-        const axis_Global = [];
-        this._fillAxisGlobalArray(axis_Global, pointsUsedInConstraints, constraints);
+        this._pointsUsedInConstraints(pointsUsedInConstraints, constraints);
+        const axisGlobal = [];
+        this._fillAxisGlobalArray(axisGlobal, pointsUsedInConstraints, constraints);
 
-        const arraySize = axis_Global.length; // size for Jacobian(n x n) and F (n).
+        let deltas
+        try {
+            deltas = this._NewtonMethod(axisGlobal, constraints, 10, 1e-1);
+        } catch (e) {
+            throw e;
+        }
+
+        console.log(points);
+        this._assignDeltasToPoints(deltas, points, axisGlobal);
+        // console.log(points);
+
+    }
+
+    _assignDeltasToPoints(deltas, points, axisGlobal) {
+        let name;
+        let idStr;
+        for (let i = 0; i < axisGlobal.length; i++) {
+            [name, idStr] = axisGlobal[i].split('_'); // dx_1 etc.
+            if (!isNaN(idStr) && name) {
+                let idx;
+                switch (name) {
+                    case 'dx':
+                        idx = points.findIndex(point => {
+                                let id = Number.parseInt(idStr);
+                                return point.id === id;
+                            });
+                        if (idx != -1) {
+                            points[idx].x += deltas[i];
+                        }
+                        break;
+                    case 'dy':
+                        idx = points.findIndex(point => {
+                                let id = Number.parseInt(idStr);
+                                return point.id === id;
+                            });
+                        if (idx != -1) {
+                            points[idx].y += deltas[i];
+                        }
+                        break;
+
+                    default:
+                        break;
+                }
+            }
+        }
+    }
+
+    _NewtonMethod(axisGlobal, constraints, maxK, epsilon) {
+        let k = 0;
+        let S = epsilon + 1;
+        
+        const arraySize = axisGlobal.length; // size for Jacobian(n x n) and F (n).
         
         // creating Jacobian and F with zeros
         const Jacobian = new Array(arraySize);
         for (let i = 0; i < arraySize; i++) {
-            Jacobian[i] = new Array(arraySize);;
+            Jacobian[i] = new Array(arraySize);
         }
-        this._fill2dArrayWithNumber(Jacobian, arraySize, arraySize, 0);
         const F = new Array(arraySize);
-        this._fillVectorWithNumber(F, arraySize, 0);
+        const X = new Array(arraySize);
+        const X_prev = new Array(arraySize);
+        let deltaX = new Array(arraySize);
+        this._fillVectorWithNumber(X, arraySize, 0);
+        this._fillVectorWithNumber(X_prev, arraySize, 0);
+        this._fillVectorWithNumber(deltaX, arraySize, 0);
+        
+        while (k < maxK && S > epsilon) {
+            this._fill2dArrayWithNumber(Jacobian, arraySize, arraySize, 0);
+            this._fillVectorWithNumber(F, arraySize, 0);
 
-        const unknowns = new Array(arraySize);
-        this._fillVectorWithNumber(unknowns, arraySize, 0);
+            this._fillJacobianAndFbyConstraints(Jacobian, F, axisGlobal, constraints, X_prev);
 
-        this._fillJacobianAndFbyConstraints(Jacobian, F, axis_Global, constraints, unknowns);
+            // F = -F   (J*dX = -F)
+            for (let i = 0; i < F.length; i++) {
+                F[i] = F[i] * -1;
+            }
 
-        console.log(axis_Global);
-        console.log({Jacobian});
-        console.log({F});
+            // // clear dX before solving equation system
+            // this._fillVectorWithNumber(deltaX, arraySize, 0);
+
+            // solving equation system
+            try {
+                deltaX = this._solveSystemOfEquation(Jacobian, F);
+            } catch (e) {
+                throw e;
+            }
+
+            // X = X_prev + deltaX
+            console.log({X});
+            for (let i = 0; i < X.length; i++) {
+                X[i] = X_prev[i] + deltaX[i];
+                X_prev[i] = X[i];
+            }
+
+            console.log({deltaX});
+
+            S = this._calcNorm(deltaX)
+            k++;
+            console.log('S = ' + S);
+            console.log('k = ' + k);
+        }
+        
+        // check. Why loop has been finished
+        if (S > epsilon) {
+            throw Error("NewtonMethod: Can't solve");
+        }
+
+        
+        return X;
+    }
+
+    _calcNorm(vector) {
+        return this._supremumNorm(vector);
+    }
+
+    _supremumNorm(vector) {
+        let max = 0;
+        for (let i = 0; i < vector.length; i++) {
+            const abs = Math.abs(vector[i]);
+            if (abs > max) {
+                max = abs;
+            }
+        }
+        
+        return max;
+    }
+
+    _solveSystemOfEquation(A, B) {
+        return this._solveSystemByGauss(A, B);
+    }
+
+    
+    _solveSystemByGauss(A, B) {
+        if (A.length !== B.length || A[0].length !== B.length) {
+            throw new Error("Gauss solver: A and B should be same size");
+        }
+        
+        const dim = A.length;
+
+        // Direct step
+        for(let i = 0; i < dim; i++) {
+
+            // main element choising and swapping
+            let maxAbsIndex = i;
+            for (let k = i+1; k < dim; k++) {
+                if (Math.abs(A[k][i]) > Math.abs(A[maxAbsIndex][i])) {
+                    maxAbsIndex = k;
+                }
+            }
+            if (maxAbsIndex !== i) {
+                let tmp = A[i];
+                A[i] = A[maxAbsIndex];
+                A[maxAbsIndex] = tmp;
+
+                tmp = B[i];
+                B[i] = B[maxAbsIndex];
+                B[maxAbsIndex] = tmp;
+            }
+            // end main element choising and swapping
+
+            if (A[i][i] == 0) {
+                // throw new Error('Gauss: A[' + i + '][' + i + '] = 0');
+                A[i][i] = 1e-6; // TODO something.
+            }
+            
+            for (let j = i+1; j < dim; j++) {
+                const coeffA = A[j][i] / A[i][i];
+                for (let k = i; k < dim; k++) {
+                    A[j][k] = A[j][k] - coeffA * A[i][k];
+                }
+                B[j] = B[j] - coeffA * B[i];
+            }
+        }
+
+        // Reverse step
+        const X = new Array(dim);
+
+        X[dim-1] = B[dim-1] / A[dim-1][dim-1];
+        for (let n = dim - 2; n >= 0; n--) {
+            let subSum = 0;
+            for (let k = n + 1; k < dim; k++) {
+                subSum += A[n][k] * X[k];
+            }
+            X[n] = (B[n] - subSum) / A[n][n];
+        }
+
+        return X;
     }
 
     _fillJacobianAndFbyConstraints(Jacobian, F, globalAxis, constraints, unknowns) {
@@ -57,7 +224,7 @@ class Kernel {
             }
             
             if (constraintFunction) {
-                this._fillGlobalByLocal(Jacobian, F, globalAxis, constraintFunction);
+                this._fillGlobalByLocal(Jacobian, F, constraintFunction);
             }
         }
 
@@ -72,20 +239,20 @@ class Kernel {
     }
 
     // Ансамблирование общей и локальной матиц
-    _fillGlobalByLocal(globalJacobian, globalF, globalAxis, constraintFunction) {
+    _fillGlobalByLocal(globalJacobian, globalF, constraintFunction) {
         // Получение соответвия локальных и глобальных индексов
         const localToGlobal = constraintFunction.localToGlobal;
 
         // Jacobian
         for (let i = 0; i < constraintFunction.dim; i++) {
             for (let j = 0; j < constraintFunction.dim; j++) {
-                globalJacobian[localToGlobal[i]][localToGlobal[j]] = constraintFunction.JacobianLocal[i][j];
+                globalJacobian[localToGlobal[i]][localToGlobal[j]] += constraintFunction.JacobianLocal[i][j];
             }
         }
 
         // vector F
         for (let i = 0; i < constraintFunction.dim; i++) {
-            globalF[localToGlobal[i]] = constraintFunction.F_Local[i];
+            globalF[localToGlobal[i]] += constraintFunction.F_Local[i];
         }
     }
 
@@ -112,14 +279,14 @@ class Kernel {
      */
     _fillAxisGlobalArray(axisGlobal, pointsUsedInConstraints, constraints) {
         for (let constraint of constraints) {
-            axisGlobal.push("lambda_" + constraint.id);
+            axisGlobal.push('lambda_' + constraint.id);
         }
         for (let point of pointsUsedInConstraints) {
             if (point.dx) {
-                axisGlobal.push("dx_" + point.id);
+                axisGlobal.push('dx_' + point.id);
             }
             if (point.dy) {
-                axisGlobal.push("dy_" + point.id);
+                axisGlobal.push('dy_' + point.id);
             }
         }
     }
