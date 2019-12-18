@@ -21,14 +21,12 @@ class Kernel {
 
         let deltas
         try {
-            deltas = this._NewtonMethod(axisGlobal, constraints, 10, 1e-1);
+            deltas = this._NewtonMethod(axisGlobal, constraints, 10, 1e-3);
         } catch (e) {
             throw e;
         }
 
-        console.log(points);
         this._assignDeltasToPoints(deltas, points, axisGlobal);
-        // console.log(points);
 
     }
 
@@ -79,25 +77,20 @@ class Kernel {
         }
         const F = new Array(arraySize);
         const X = new Array(arraySize);
-        const X_prev = new Array(arraySize);
         let deltaX = new Array(arraySize);
         this._fillVectorWithNumber(X, arraySize, 0);
-        this._fillVectorWithNumber(X_prev, arraySize, 0);
         this._fillVectorWithNumber(deltaX, arraySize, 0);
         
         while (k < maxK && S > epsilon) {
             this._fill2dArrayWithNumber(Jacobian, arraySize, arraySize, 0);
             this._fillVectorWithNumber(F, arraySize, 0);
 
-            this._fillJacobianAndFbyConstraints(Jacobian, F, axisGlobal, constraints, X_prev);
+            this._fillJacobianAndFbyConstraints(Jacobian, F, axisGlobal, constraints, X);
 
             // F = -F   (J*dX = -F)
             for (let i = 0; i < F.length; i++) {
                 F[i] = F[i] * -1;
             }
-
-            // // clear dX before solving equation system
-            // this._fillVectorWithNumber(deltaX, arraySize, 0);
 
             // solving equation system
             try {
@@ -107,26 +100,20 @@ class Kernel {
             }
 
             // X = X_prev + deltaX
-            console.log({X});
             for (let i = 0; i < X.length; i++) {
-                X[i] = X_prev[i] + deltaX[i];
-                X_prev[i] = X[i];
+                X[i] += deltaX[i];
             }
-
-            console.log({deltaX});
 
             S = this._calcNorm(deltaX)
             k++;
-            console.log('S = ' + S);
-            console.log('k = ' + k);
         }
         
         // check. Why loop has been finished
         if (S > epsilon) {
-            throw Error("NewtonMethod: Can't solve");
+            throw Error('NewtonMethod: Can\'t solve.' + 
+                '\nS > epsilon: epsilon=' + epsilon + ' S='+S + '\nIterations: ' + maxK);
         }
 
-        
         return X;
     }
 
@@ -181,7 +168,7 @@ class Kernel {
 
             if (A[i][i] == 0) {
                 // throw new Error('Gauss: A[' + i + '][' + i + '] = 0');
-                A[i][i] = 1e-6; // TODO something.
+                A[i][i] = 1e-12; // TODO something.
             }
             
             for (let j = i+1; j < dim; j++) {
