@@ -102,8 +102,8 @@ export default {
       dataLayer: null,
       kernel: null,
       selectedInstrument: 1,
-      drawPoints: [],
-      endOfLine: null,
+      drawingPoints: [],
+      endOfLine: false,
     };
   },
   mounted() {
@@ -118,18 +118,112 @@ export default {
     container.tabIndex = 1;
     container.focus();
     this.setContainerEvents(container);
-    // this.kernel = new Kernel();
-    // this.dataLayer = new DataLayer(this.kernel);
+    this.kernel = new Kernel();
+    this.dataLayer = new DataLayer(this.kernel);
   },
   methods: {
     selectInstrument(event) {
       this.selectedInstrument = +event.target.dataset.number;
     },
+    setPointEvents(point) {
+      // TODO add event handler for dragstart and dragend
+      point.on('click', () => {
+        if (this.selectedInstrument === 2) {
+          if (!point.relatedLine) {
+            const pointId = point.relatedId;
+            this.dataLayer.removePoint(pointId);
+            const pointIndex = this.drawingPoints.findIndex((el) => el.relatedId == pointId);
+            this.drawingPoints.splice(pointIndex, 1);
+            point.destroy();
+            this.layer.draw();
+          }
+        }
+      });
+      point.on('dragmove', (event) => {
+        if (!point.relatedLine) {
+          const relatedPoint = point.relatedPoint;
+          relatedPoint.x = point.x();
+          relatedPoint.y = point.y();
+        } else {
+          const relatedPoint = point.relatedPoint;
+          const line = point.relatedLine;
+          const linePoints = line.points();
+          const lineX = line.x();
+          const lineY = line.y();
+          if (point.relatedId === line.startPoint.relatedId) {
+            linePoints[0] = point.x() - lineX;
+            linePoints[1] = point.y() - lineY;
+          } else {
+            linePoints[2] = point.x() - lineX;
+            linePoints[3] = point.y() - lineY;
+          }
+          relatedPoint.x = point.x();
+          relatedPoint.y = point.y();
+          line.points(linePoints);
+          this.layer.draw();
+        }
+      });
+    },
+    setLineEvents(line) {
+      line.on('click', () => {
+        if (this.selectedInstrument === 2) {
+          const startP = line.startPoint;
+          const endP = line.endPoint;
+          const sPId = startP.relatedId;
+          const ePId = endP.relatedId;
+
+          this.dataLayer.removePoint(sPId);
+          this.dataLayer.removePoint(ePId);
+
+          let pointIndex = this.drawingPoints.findIndex((el) => el.relatedId == sPId);
+          this.drawingPoints.splice(pointIndex, 1);
+          pointIndex = this.drawingPoints.findIndex((el) => el.relatedId == ePId);
+          this.drawingPoints.splice(pointIndex, 1);
+
+          startP.destroy();
+          endP.destroy();
+          line.destroy();
+
+          this.layer.draw();
+        }
+      });
+      line.on('dragmove', () => {
+        const linePoints = line.points();
+        const x = line.x();
+        const y = line.y();
+        const startP = line.startPoint;
+        const startPRel = startP.relatedPoint;
+        const endP = line.endPoint;
+        const endPRel = endP.relatedPoint;
+
+        startP.x(linePoints[0] + x);
+        startP.y(linePoints[1] + y);
+        startPRel.x = linePoints[0] + x;
+        startPRel.y = linePoints[1] + y;
+
+        endP.x(linePoints[2] + x);
+        endP.y(linePoints[3] + y);
+        endPRel.x = linePoints[2] + x;
+        endPRel.y = linePoints[3] + y;
+      });
+    },
     setContainerEvents(container) {
       // mouseover handler
-      container.addEventListener('mousemove', () => {
-        // eslint-disable-next-line
+      container.addEventListener('mousemove', (event) => {
         // console.log('mouse');
+        const pointerX = event.clientX;
+        const pointerY = event.clientY;
+
+        if (this.endOfLine) {
+          const endPoint = this.drawingPoints[this.drawingPoints.length - 1];
+          endPoint.x(pointerX);
+          endPoint.y(pointerY);
+          const linePoints = endPoint.relatedLine.points();
+          linePoints[2] = pointerX;
+          linePoints[3] = pointerY;
+          endPoint.relatedLine.points(linePoints);
+          this.layer.draw();
+        }
       });
 
       // click handler
@@ -138,45 +232,67 @@ export default {
         const pointerY = event.clientY;
 
         if (this.selectedInstrument === 3) { // selected instrument – point
-          // eslint-disable-next-line
           console.log('point');
-          const newPoint = new Point(pointerX, pointerY);
-          // this.dataLayer.addPoint(newPoint);
-          const drawPoint = new Konva.Circle({
-            radius: 10,
+          const modelPoint = new Point(pointerX, pointerY);
+          this.dataLayer.addPoint(modelPoint);
+          const drawingPoint = new Konva.Circle({
+            radius: 5,
             fill: '#244CE5',
             x: pointerX,
             y: pointerY,
             draggable: true,
           });
-          drawPoint.pointId = newPoint.id;
-          this.drawPoints.push(drawPoint);
-          this.layer.add(drawPoint);
+          drawingPoint.relatedPoint = modelPoint;
+          drawingPoint.relatedId = modelPoint.id;
+          this.setPointEvents(drawingPoint);
+          this.drawingPoints.push(drawingPoint);
+          this.layer.add(drawingPoint);
           this.layer.draw();
-        } else if (this.selectedInstrument === 4) {
-          // eslint-disable-next-line
+        } else if (this.selectedInstrument === 4) { // selected instrument – line
           console.log('line');
-          if (this.tmpLineEnd === null) {
-            const startPoint = new Point(pointerX, pointerY);
-            const endPoint = new Point(pointerX, pointerY);
-            // this.dataLayer.addPoint(newPoint);
-            // this.dataLayer.addPoint(endPoint);
+          if (!this.endOfLine) {
+            const startModelPoint = new Point(pointerX, pointerY);
+            const endModelPoint = new Point(pointerX, pointerY);
+            this.dataLayer.addPoint(startModelPoint);
+            this.dataLayer.addPoint(endModelPoint);
             const sP = new Konva.Circle({
-              radius: 10,
+              radius: 5,
               fill: '#244CE5',
               x: pointerX,
               y: pointerY,
               draggable: true,
             });
             const eP = sP.clone();
-            this.drawPoints.push(sP, eP);
-            this.endOfLine = eP;
-            const drawLine = new Konva.Line({
-              points: [startPoint.x, startPoint.y, endPoint.x, endPoint.y],
-              fill: '#244CE5',
+            this.setPointEvents(sP);
+            this.setPointEvents(eP);
+
+            this.drawingPoints.push(sP, eP);
+            const drawingLine = new Konva.Line({
+              points: [startModelPoint.x, startModelPoint.y, endModelPoint.x, endModelPoint.y],
+              stroke: '#244CE5',
+              strokeWidth: 3,
+              draggable: true,
             });
-            this.layer.add(drawLine);
+            
+            drawingLine.startPoint = sP;
+            drawingLine.endPoint = eP;
+            this.setLineEvents(drawingLine);
+
+            sP.relatedPoint = startModelPoint;
+            sP.relatedLine = drawingLine;
+            sP.relatedId = startModelPoint.id;
+
+            eP.relatedPoint = endModelPoint;
+            eP.relatedLine = drawingLine;
+            eP.relatedId = endModelPoint.id;
+
+            this.endOfLine = true;
+            this.layer.add(drawingLine);
+            this.layer.add(sP);
+            this.layer.add(eP);
             this.layer.draw();
+          } else {
+            this.endOfLine = false;
           }
         }
       });

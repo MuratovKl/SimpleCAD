@@ -13,6 +13,13 @@ class DataLayer {
     this._points.push(point);
   }
 
+  removePoint(id) {
+    const pointIndex = this._points.findIndex((el) => el.id === id);
+    console.log(pointIndex);
+    this._points.splice(pointIndex, 1);
+    // TODO добавить удаление связанных ограничений
+  }
+
   addConstraint(constraint) {
     // TODO добавить проверку вводимых ограничений
     this._constraints.push(constraint);
