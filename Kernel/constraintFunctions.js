@@ -128,4 +128,61 @@ function getDerivativeFunction_Length(constraint, unknowns, axisGlobal) {
     return({axisLocal, JacobianLocal, F_Local, dim, localToGlobal});
 }
 
-export { getDerivativeFunction_Horizontal, getDerivativeFunction_Length };
+/**
+ * Function for Horizontal constraint. 
+ * This function fill local matrix J and vector F.
+ * 
+ * @param {Constraint} constraint 
+ * @returns {Object} Object with axis names, local Jacobian and local vector F
+ */
+function getDerivativeFunction_FixedPoint(constraint, unknowns, axisGlobal) {
+    const dim = 4;
+
+    if(constraint.points.length == 0) {
+        throw new Error("getDerivativeFunction_FixedPoint: more than 1 point")
+    }
+    
+    const axisLocal = [];
+    axisLocal.push('lambda_' + constraint.id + '_1');
+    axisLocal.push('lambda_' + constraint.id + '_2');
+    axisLocal.push('dx_' + constraint.points[0].id);
+    axisLocal.push('dy_' + constraint.points[0].id);
+    const localToGlobal = new Array(dim);
+    for (let i = 0; i < dim; i++) {
+        localToGlobal[i] = axisGlobal.indexOf(axisLocal[i]);
+    }
+
+    const JacobianLocal = new Array(dim);
+    const F_Local = new Array(dim);
+    for (let i = 0; i < dim; i++) {
+        F_Local[i] = 0;
+        JacobianLocal[i] = new Array(dim);
+        for (let j = 0; j < dim; j++) {
+            JacobianLocal[i][j] = 0;
+        }
+    }
+
+    JacobianLocal[0][2] = 1;
+    JacobianLocal[1][3] = 1;
+    JacobianLocal[2][0] = 1;
+    JacobianLocal[3][1] = 1;
+
+    // const x = constraint.points[0].x;
+    // const y = constraint.points[0].y;
+    const lambda1 = unknowns[localToGlobal[0]];
+    const lambda2 = unknowns[localToGlobal[1]];
+    const dx = unknowns[localToGlobal[2]];
+    const dy = unknowns[localToGlobal[3]];
+    F_Local[0] = dx;
+    F_Local[1] = dy; // -l
+    F_Local[2] = lambda1; // +l
+    F_Local[3] = lambda2; // +l
+
+    return({axisLocal, JacobianLocal, F_Local, dim, localToGlobal});
+}
+
+export {
+    getDerivativeFunction_Horizontal,
+    getDerivativeFunction_Length,
+    getDerivativeFunction_FixedPoint
+};

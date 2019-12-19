@@ -1,5 +1,9 @@
 import { PointUsedInConstraints } from './PointUsedInConstraints.js';
-import { getDerivativeFunction_Horizontal, getDerivativeFunction_Length } from './constraintFunctions.js';
+import { 
+        getDerivativeFunction_Horizontal,
+        getDerivativeFunction_Length,
+        getDerivativeFunction_FixedPoint 
+    } from './constraintFunctions.js';
 /**
  * Kernel of CAD system
  */
@@ -203,6 +207,9 @@ class Kernel {
                 case 'length':
                     constraintFunction = getDerivativeFunction_Length(constraint, unknowns, globalAxis);
                     break;
+                case 'fixed_point':
+                    constraintFunction = getDerivativeFunction_FixedPoint(constraint, unknowns, globalAxis);
+                    break;
 
                 default:
                     break;
@@ -213,12 +220,14 @@ class Kernel {
             }
         }
 
+        const startDXorDY = globalAxis.findIndex(el => { return (el[0] === 'd') })
+
         // add +1 for diagonal elements in Jacobian (without lambda)
-        for (let k = constraints.length; k < globalAxis.length; k++) {
+        for (let k = startDXorDY; k < globalAxis.length; k++) {
             Jacobian[k][k] += 1;
         }
         // add +dx_i and +dy_i in F[i]
-        for (let k = constraints.length; k < globalAxis.length; k++) {
+        for (let k = startDXorDY; k < globalAxis.length; k++) {
             F[k] += unknowns[k];
         }
     }
@@ -264,7 +273,16 @@ class Kernel {
      */
     _fillAxisGlobalArray(axisGlobal, pointsUsedInConstraints, constraints) {
         for (let constraint of constraints) {
-            axisGlobal.push('lambda_' + constraint.id);
+            switch (constraint.type) {
+                case 'fixed_point':
+                    axisGlobal.push('lambda_' + constraint.id + '_1');
+                    axisGlobal.push('lambda_' + constraint.id + '_2');
+                    break;
+            
+                default:
+                    axisGlobal.push('lambda_' + constraint.id);
+                    break;
+            }
         }
         for (let point of pointsUsedInConstraints) {
             if (point.dx) {
@@ -296,6 +314,10 @@ class Kernel {
                         pointUsedInConstraints.dy = true;
                         break;
                     case 'length':
+                        pointUsedInConstraints.dx = true;
+                        pointUsedInConstraints.dy = true;
+                        break;
+                    case 'fixed_point':
                         pointUsedInConstraints.dx = true;
                         pointUsedInConstraints.dy = true;
                         break;
