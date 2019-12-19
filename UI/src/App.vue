@@ -209,15 +209,15 @@ export default {
       const endP = line.endPoint;
       const endPRel = endP.relatedPoint;
 
-      startP.x(linePoints[0] + x);
-      startP.y(linePoints[1] + y);
-      startPRel.x = linePoints[0] + x;
-      startPRel.y = linePoints[1] + y;
-
-      endP.x(linePoints[2] + x);
-      endP.y(linePoints[3] + y);
-      endPRel.x = linePoints[2] + x;
-      endPRel.y = linePoints[3] + y;
+      startP.x(startPRel.x);
+      startP.y(startPRel.y);
+      endP.x(endPRel.x);
+      endP.y(endPRel.y);
+      linePoints[0] = startP.x() + x;
+      linePoints[1] = startP.y() + y;
+      linePoints[2] = endP.x() + x;
+      linePoints[3] = endP.y() + y;
+      this.layer.draw();
     },
     setLineEvents(line) {
       line.on('click', () => {
@@ -242,13 +242,23 @@ export default {
           this.layer.draw();
         } else if (this.selectedInstrument === 5 && !('horizontal' in line.relatedConstraints)) {
           const points = [line.startPoint.relatedPoint, line.endPoint.relatedPoint];
+          console.log('Line Handler');
+          console.log(points);
+          console.log(JSON.stringify(points));
           const constraint = new Constraint('horizontal', points);
           line.relatedConstraints[constraint.type] = constraint;
           this.dataLayer.addConstraint(constraint);
-          line.startPoint.x(line.startPoint.relatedPoint.x);
-          line.startPoint.y(line.startPoint.relatedPoint.y);
-          line.endPoint.x(line.endPoint.relatedPoint.x);
-          line.endPoint.x(line.endPoint.relatedPoint.y);
+          console.log('Line Handler Done');
+          console.log(points);
+          console.log(JSON.stringify(points));
+          console.log(points[0]._y);
+          console.log(points[1]._y);
+          // line.startPoint.x( this.dataLayer._points[0].x);
+          // line.startPoint.y(this.dataLayer._points[0].y);
+          // line.endPoint.x(this.dataLayer._points[1].x);
+          // line.endPoint.y(this.dataLayer._points[1].y);
+          console.log('line End', line.endPoint.y());
+          console.log(this.dataLayer);
           this.updateLinePos(line);
         }
       });
