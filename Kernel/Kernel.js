@@ -2,7 +2,9 @@ import { PointUsedInConstraints } from './PointUsedInConstraints.js';
 import { 
         getDerivativeFunction_Horizontal,
         getDerivativeFunction_Length,
-        getDerivativeFunction_FixedPoint 
+        getDerivativeFunction_FixPoint, 
+        getDerivativeFunction_Vertical,
+        getDerivativeFunction_Coincident
     } from './constraintFunctions.js';
 /**
  * Kernel of CAD system
@@ -201,14 +203,20 @@ class Kernel {
         for (let constraint of constraints) {
             let constraintFunction;
             switch (constraint.type) {
-                case 'horizontal':
+                case 'HORIZONTAL':
                     constraintFunction = getDerivativeFunction_Horizontal(constraint, unknowns, globalAxis);
                     break;
-                case 'length':
+                case 'VERTICAL':
+                    constraintFunction = getDerivativeFunction_Vertical(constraint, unknowns, globalAxis);
+                    break;
+                case 'LENGTH':
                     constraintFunction = getDerivativeFunction_Length(constraint, unknowns, globalAxis);
                     break;
-                case 'fixed_point':
-                    constraintFunction = getDerivativeFunction_FixedPoint(constraint, unknowns, globalAxis);
+                case 'FIX_POINT':
+                    constraintFunction = getDerivativeFunction_FixPoint(constraint, unknowns, globalAxis);
+                    break;
+                case 'COINCIDENT':
+                    constraintFunction = getDerivativeFunction_Coincident(constraint, unknowns, globalAxis);
                     break;
 
                 default:
@@ -274,11 +282,14 @@ class Kernel {
     _fillAxisGlobalArray(axisGlobal, pointsUsedInConstraints, constraints) {
         for (let constraint of constraints) {
             switch (constraint.type) {
-                case 'fixed_point':
+                case 'FIX_POINT':
                     axisGlobal.push('lambda_' + constraint.id + '_1');
                     axisGlobal.push('lambda_' + constraint.id + '_2');
                     break;
-            
+                case 'COINCIDENT':
+                    axisGlobal.push('lambda_' + constraint.id + '_1');
+                    axisGlobal.push('lambda_' + constraint.id + '_2');
+                    break;
                 default:
                     axisGlobal.push('lambda_' + constraint.id);
                     break;
@@ -310,14 +321,21 @@ class Kernel {
                     pointsUsedInConstraints.push(pointUsedInConstraints);
                 }
                 switch (constraint.type) {
-                    case 'horizontal':
+                    case 'HORIZONTAL':
                         pointUsedInConstraints.dy = true;
                         break;
-                    case 'length':
+                    case 'VERTICAL':
+                        pointUsedInConstraints.dx = true;
+                        break;
+                    case 'LENGTH':
                         pointUsedInConstraints.dx = true;
                         pointUsedInConstraints.dy = true;
                         break;
-                    case 'fixed_point':
+                    case 'FIX_POINT':
+                        pointUsedInConstraints.dx = true;
+                        pointUsedInConstraints.dy = true;
+                        break;
+                    case 'COINCIDENT':
                         pointUsedInConstraints.dx = true;
                         pointUsedInConstraints.dy = true;
                         break;
