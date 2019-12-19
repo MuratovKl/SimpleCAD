@@ -22,12 +22,12 @@ class DataLayer {
 
   addConstraint(constraint) {
     // TODO добавить проверку вводимых ограничений
-    this._constraints.push(constraint);
+    this._constrains.push(constraint);
 
     try {
-      this._kernel.solve(this._points, this._constraints);
+      this._kernel.solve(this._points, this._constrains);
+      console.log(this._points);
     } catch (e) {
-      // eslint-disable-next-line
       console.error(e.message);
       this._constrains.pop();
     }

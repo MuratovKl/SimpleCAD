@@ -4,7 +4,6 @@ import { getDerivativeFunction_Horizontal, getDerivativeFunction_Length } from '
  * Kernel of CAD system
  */
 class Kernel {
-    
     /**
      * main method of Kernel for solving
      * 
@@ -12,8 +11,7 @@ class Kernel {
      * @param {Array<Point>} points points which should be modified by constraints 
      * @param {Array<Constraint>} constraints constraints
      */
-    slove(points, constraints) {
-        
+    solve(points, constraints) {
         const pointsUsedInConstraints = [];
         this._pointsUsedInConstraints(pointsUsedInConstraints, constraints);
         const axisGlobal = [];

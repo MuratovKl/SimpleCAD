@@ -58,7 +58,7 @@
               class="instrument-btn"
               :class="{ 'instrument-btn_active': selectedInstrument === 5}"
             >
-              Совпадение 2 точек
+              Горизонтальность
             </button>
           </li>
           <li class="instruments-list__el">
@@ -71,16 +71,6 @@
               Расстояние между 2 точками
             </button>
           </li>
-          <li class="instruments-list__el">
-            <button
-              @click="selectInstrument"
-              data-number="7"
-              class="instrument-btn"
-              :class="{ 'instrument-btn_active': selectedInstrument === 7}"
-            >
-              Горизонтальность прямых
-            </button>
-          </li>
         </ul>
       </div>
     </div>
@@ -91,7 +81,8 @@
 import Konva from 'konva';
 import { DataLayer } from '../../DataLayer/DataLayer';
 import { Kernel } from '../../Kernel/Kernel';
-import { Point } from '../../Point'
+import { Point } from '../../Point';
+import { Constraint } from '../../Constraint';
 
 export default {
   name: 'app',
@@ -104,6 +95,7 @@ export default {
       selectedInstrument: 1,
       drawingPoints: [],
       endOfLine: false,
+      tmpConstraint: null,
     };
   },
   mounted() {
@@ -119,6 +111,7 @@ export default {
     container.focus();
     this.setContainerEvents(container);
     this.kernel = new Kernel();
+    console.log(this.kernel);
     this.dataLayer = new DataLayer(this.kernel);
   },
   methods: {
@@ -136,6 +129,29 @@ export default {
             this.drawingPoints.splice(pointIndex, 1);
             point.destroy();
             this.layer.draw();
+          }
+        } else if (this.selectedInstrument === 6 && !('length' in point.relatedConstraints)) {
+          if (!this.tmpConstraint) {
+            const constraint = new Constraint('length', [ point ]);
+            this.tmpConstraint = constraint;
+            point.relatedConstraints[constraint.type] = constraint;
+          } else {
+            const answer = parseFloat(prompt('Введите расстояние:'));
+            if (isNaN(answer)) {
+              alert('Введено неверное значение расстояния');
+              delete this.tmpConstraint.points[0].relatedConstraints['length'];
+              this.tmpConstraint = null;
+              return;
+            }
+            this.tmpConstraint.value = answer;
+            const constraintPoint = this.tmpConstraint.points[0]
+            this.tmpConstraint.points = [constraintPoint.relatedPoint, point.relatedPoint];
+            this.dataLayer.addConstraint(this.tmpConstraint);
+            point.relatedConstraints[this.tmpConstraint.type] = this.tmpConstraint;
+            this.updatePointPos(constraintPoint);
+            this.updatePointPos(point);
+
+            this.tmpConstraint = null;
           }
         }
       });
@@ -164,6 +180,45 @@ export default {
         }
       });
     },
+    updatePointPos(point) {
+      const relatedPoint = point.relatedPoint;
+      point.x(relatedPoint.x);
+      point.y(relatedPoint.y);
+      if (point.relatedLine) {
+        const line = point.relatedLine;
+        const linePoints = line.points();
+        const lineX = line.x();
+        const lineY = line.y();
+        if (point.relatedId === line.startPoint.relatedId) {
+          linePoints[0] = point.x() - lineX;
+          linePoints[1] = point.y() - lineY;
+        } else {
+          linePoints[2] = point.x() - lineX;
+          linePoints[3] = point.y() - lineY;
+        }
+        line.points(linePoints);
+      }
+      this.layer.draw();
+    },
+    updateLinePos(line) {
+      const linePoints = line.points();
+      const x = line.x();
+      const y = line.y();
+      const startP = line.startPoint;
+      const startPRel = startP.relatedPoint;
+      const endP = line.endPoint;
+      const endPRel = endP.relatedPoint;
+
+      startP.x(linePoints[0] + x);
+      startP.y(linePoints[1] + y);
+      startPRel.x = linePoints[0] + x;
+      startPRel.y = linePoints[1] + y;
+
+      endP.x(linePoints[2] + x);
+      endP.y(linePoints[3] + y);
+      endPRel.x = linePoints[2] + x;
+      endPRel.y = linePoints[3] + y;
+    },
     setLineEvents(line) {
       line.on('click', () => {
         if (this.selectedInstrument === 2) {
@@ -185,26 +240,20 @@ export default {
           line.destroy();
 
           this.layer.draw();
+        } else if (this.selectedInstrument === 5 && !('horizontal' in line.relatedConstraints)) {
+          const points = [line.startPoint.relatedPoint, line.endPoint.relatedPoint];
+          const constraint = new Constraint('horizontal', points);
+          line.relatedConstraints[constraint.type] = constraint;
+          this.dataLayer.addConstraint(constraint);
+          line.startPoint.x(line.startPoint.relatedPoint.x);
+          line.startPoint.y(line.startPoint.relatedPoint.y);
+          line.endPoint.x(line.endPoint.relatedPoint.x);
+          line.endPoint.x(line.endPoint.relatedPoint.y);
+          this.updateLinePos(line);
         }
       });
       line.on('dragmove', () => {
-        const linePoints = line.points();
-        const x = line.x();
-        const y = line.y();
-        const startP = line.startPoint;
-        const startPRel = startP.relatedPoint;
-        const endP = line.endPoint;
-        const endPRel = endP.relatedPoint;
-
-        startP.x(linePoints[0] + x);
-        startP.y(linePoints[1] + y);
-        startPRel.x = linePoints[0] + x;
-        startPRel.y = linePoints[1] + y;
-
-        endP.x(linePoints[2] + x);
-        endP.y(linePoints[3] + y);
-        endPRel.x = linePoints[2] + x;
-        endPRel.y = linePoints[3] + y;
+        this.updateLinePos(line);
       });
     },
     setContainerEvents(container) {
@@ -244,6 +293,7 @@ export default {
           });
           drawingPoint.relatedPoint = modelPoint;
           drawingPoint.relatedId = modelPoint.id;
+          drawingPoint.relatedConstraints = {};
           this.setPointEvents(drawingPoint);
           this.drawingPoints.push(drawingPoint);
           this.layer.add(drawingPoint);
@@ -276,15 +326,18 @@ export default {
             
             drawingLine.startPoint = sP;
             drawingLine.endPoint = eP;
+            drawingLine.relatedConstraints = {};
             this.setLineEvents(drawingLine);
 
             sP.relatedPoint = startModelPoint;
             sP.relatedLine = drawingLine;
             sP.relatedId = startModelPoint.id;
+            sP.relatedConstraints = {};
 
             eP.relatedPoint = endModelPoint;
             eP.relatedLine = drawingLine;
             eP.relatedId = endModelPoint.id;
+            eP.relatedConstraints = {};
 
             this.endOfLine = true;
             this.layer.add(drawingLine);
@@ -293,6 +346,10 @@ export default {
             this.layer.draw();
           } else {
             this.endOfLine = false;
+            const endPoint = this.drawingPoints[this.drawingPoints.length - 1];
+            const relPoint = endPoint.relatedPoint;
+            relPoint.x = endPoint.x();
+            relPoint.y = endPoint.y();
           }
         }
       });

@@ -1,5 +1,4 @@
 class Constraint {
-  // eslint-disable-next-line
   static curId = 0;
 
   constructor(type, points) {
@@ -22,6 +21,10 @@ class Constraint {
 
   get points() {
     return this._points;
+  }
+
+  set points(val) {
+    this._points = val;
   }
 
   get id() {
