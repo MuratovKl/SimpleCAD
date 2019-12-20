@@ -71,6 +71,36 @@
               Расстояние между 2 точками
             </button>
           </li>
+          <li class="instruments-list__el">
+            <button
+              @click="selectInstrument"
+              data-number="7"
+              class="instrument-btn"
+              :class="{ 'instrument-btn_active': selectedInstrument === 7}"
+            >
+              Вертикальность
+            </button>
+          </li>
+          <li class="instruments-list__el">
+            <button
+              @click="selectInstrument"
+              data-number="8"
+              class="instrument-btn"
+              :class="{ 'instrument-btn_active': selectedInstrument === 8}"
+            >
+              Совмещение точек
+            </button>
+          </li>
+          <li class="instruments-list__el">
+            <button
+              @click="selectInstrument"
+              data-number="9"
+              class="instrument-btn"
+              :class="{ 'instrument-btn_active': selectedInstrument === 9}"
+            >
+              Фиксация точки
+            </button>
+          </li>
         </ul>
       </div>
     </div>
@@ -96,6 +126,8 @@ export default {
       drawingPoints: [],
       endOfLine: false,
       tmpConstraint: null,
+      tmpConstraintId: null,
+      prevLineDrag: Date.now(),
     };
   },
   mounted() {
@@ -130,16 +162,20 @@ export default {
             point.destroy();
             this.layer.draw();
           }
-        } else if (this.selectedInstrument === 6 && !('length' in point.relatedConstraints)) {
+        } else if (this.selectedInstrument === 6) {
           if (!this.tmpConstraint) {
-            const constraint = new Constraint('length', [ point ]);
+            const constraint = new Constraint('LENGTH', [ point ]);
             this.tmpConstraint = constraint;
-            point.relatedConstraints[constraint.type] = constraint;
+            if (point.relatedConstraints[constraint.type]) {
+              point.relatedConstraints[constraint.type].push(constraint);
+            } else {
+              point.relatedConstraints[constraint.type] = [ constraint ];
+            }
           } else {
             const answer = parseFloat(prompt('Введите расстояние:'));
             if (isNaN(answer)) {
               alert('Введено неверное значение расстояния');
-              delete this.tmpConstraint.points[0].relatedConstraints['length'];
+              this.tmpConstraint.points[0].relatedConstraints['LENGTH'].pop();
               this.tmpConstraint = null;
               return;
             }
@@ -148,11 +184,50 @@ export default {
             this.tmpConstraint.points = [constraintPoint.relatedPoint, point.relatedPoint];
             this.dataLayer.addConstraint(this.tmpConstraint);
             point.relatedConstraints[this.tmpConstraint.type] = this.tmpConstraint;
-            this.updatePointPos(constraintPoint);
-            this.updatePointPos(point);
-
+            this.updateDrawing();
             this.tmpConstraint = null;
           }
+        } else if (this.selectedInstrument === 8) {
+          if (!this.tmpConstraint) {
+            const constraint = new Constraint('COINCIDENT', [ point ]);
+            this.tmpConstraint = constraint;
+            if (point.relatedConstraints[constraint.type]) {
+              point.relatedConstraints[constraint.type].push(constraint);
+            } else {
+              point.relatedConstraints[constraint.type] = [ constraint ];
+            }
+          } else {
+            const constraintPoint = this.tmpConstraint.points[0]
+            this.tmpConstraint.points = [constraintPoint.relatedPoint, point.relatedPoint];
+            this.dataLayer.addConstraint(this.tmpConstraint);
+            if (point.relatedConstraints[this.tmpConstraint.type]) {
+              point.relatedConstraints[this.tmpConstraint.type].push(this.tmpConstraint);
+            } else {
+              point.relatedConstraints[this.tmpConstraint.type] = [ this.tmpConstraint ];
+            }
+            if (constraintPoint.relatedConstraints['FIX_POINT']) {
+              const fixConstraint = new Constraint('FIX_POINT', [ point.relatedPoint ]);
+              point.relatedConstraints['FIX_POINT'] = [ fixConstraint ];
+              point.draggable(false);
+              point.fill('grey');
+              this.dataLayer.addConstraint(fixConstraint);
+            } else if (point.relatedConstraints['FIX_POINT']) {
+              const fixConstraint = new Constraint('FIX_POINT', [ constraintPoint.relatedPoint ]);
+              constraintPoint.relatedConstraints['FIX_POINT'] = [ fixConstraint ];
+              constraintPoint.draggable(false);
+              constraintPoint.fill('grey');
+              this.dataLayer.addConstraint(fixConstraint);
+            }
+            this.updateDrawing();
+            this.tmpConstraint = null;
+          }
+        } else if (this.selectedInstrument === 9 && !('FIX_POINT' in point.relatedConstraints)) {
+          const constraint = new Constraint('FIX_POINT', [ point.relatedPoint ]);
+          point.relatedConstraints[constraint.type] = [ constraint ];
+          point.draggable(false);
+          point.fill('grey');
+          this.dataLayer.addConstraint(constraint);
+          this.updateDrawing();
         }
       });
       point.on('dragmove', (event) => {
@@ -178,6 +253,46 @@ export default {
           line.points(linePoints);
           this.layer.draw();
         }
+        if (Date.now() - this.prevLineDrag > 16) {
+          try {
+            if (this.dataLayer.resolve()) {
+              this.updateDrawing();
+            }
+          } catch (e) {
+            console.error(e.message);
+          }
+          this.prevLineDrag = Date.now();
+        }
+      });
+
+      point.on('dragstart', () => {
+        if (!point.relatedConstraints['FIX_POINT']) {
+          const tmpConstraint = new Constraint('FIX_POINT', [ point.relatedPoint ]);
+          this.tmpConstraintId = tmpConstraint.id;
+          this.dataLayer.addTmpConstraint(tmpConstraint);
+        }
+      });
+
+      point.on('dragend', () => {
+        if (this.tmpConstraintId) {
+          this.dataLayer.removeConstraint(this.tmpConstraintId);
+          this.tmpConstraintId = null;
+        }
+      });
+
+      point.on('mouseenter', () => {
+        if (point.draggable()) {
+          point.radius(8);
+          point.fill('green');
+          this.layer.draw();
+        }
+      });
+      point.on('mouseleave', () => {
+        if (point.draggable()) {
+          point.radius(5);
+          point.fill('#244CE5');
+          this.layer.draw();
+        }
       });
     },
     updatePointPos(point) {
@@ -200,7 +315,12 @@ export default {
       }
       this.layer.draw();
     },
-    updateLinePos(line) {
+    updateDrawing() {
+      for (let point of this.drawingPoints) {
+        this.updatePointPos(point);
+      }
+    },
+    updateLineObject(line) {
       const linePoints = line.points();
       const x = line.x();
       const y = line.y();
@@ -209,14 +329,16 @@ export default {
       const endP = line.endPoint;
       const endPRel = endP.relatedPoint;
 
-      startP.x(startPRel.x);
-      startP.y(startPRel.y);
-      endP.x(endPRel.x);
-      endP.y(endPRel.y);
-      linePoints[0] = startP.x() + x;
-      linePoints[1] = startP.y() + y;
-      linePoints[2] = endP.x() + x;
-      linePoints[3] = endP.y() + y;
+      startP.x(linePoints[0] + x);
+      startP.y(linePoints[1] + y);
+      endP.x(linePoints[2] + x);
+      endP.y(linePoints[3] + y);
+
+      startPRel.x = startP.x();
+      startPRel.y = startP.y();
+      endPRel.x = endP.x();
+      endPRel.y = endP.y();
+
       this.layer.draw();
     },
     setLineEvents(line) {
@@ -240,30 +362,46 @@ export default {
           line.destroy();
 
           this.layer.draw();
-        } else if (this.selectedInstrument === 5 && !('horizontal' in line.relatedConstraints)) {
+        } else if (this.selectedInstrument === 5 && !('HORIZONTAL' in line.relatedConstraints)) {
           const points = [line.startPoint.relatedPoint, line.endPoint.relatedPoint];
-          console.log('Line Handler');
-          console.log(points);
-          console.log(JSON.stringify(points));
-          const constraint = new Constraint('horizontal', points);
-          line.relatedConstraints[constraint.type] = constraint;
+          console.log('Line Handler Horizontal');
+          const constraint = new Constraint('HORIZONTAL', points);
+          line.relatedConstraints[constraint.type] = [ constraint ];
           this.dataLayer.addConstraint(constraint);
-          console.log('Line Handler Done');
-          console.log(points);
-          console.log(JSON.stringify(points));
-          console.log(points[0]._y);
-          console.log(points[1]._y);
-          // line.startPoint.x( this.dataLayer._points[0].x);
-          // line.startPoint.y(this.dataLayer._points[0].y);
-          // line.endPoint.x(this.dataLayer._points[1].x);
-          // line.endPoint.y(this.dataLayer._points[1].y);
-          console.log('line End', line.endPoint.y());
-          console.log(this.dataLayer);
-          this.updateLinePos(line);
+          this.updateDrawing();
+          // this.updateLinePos(line);
+        } else if (this.selectedInstrument === 7 && !('VERTICAL' in line.relatedConstraints)) {
+          const points = [line.startPoint.relatedPoint, line.endPoint.relatedPoint];
+          console.log('Line Handler Vertical');
+          const constraint = new Constraint('VERTICAL', points);
+          line.relatedConstraints[constraint.type] = [ constraint ];
+          this.dataLayer.addConstraint(constraint);
+          this.updateDrawing();
         }
       });
       line.on('dragmove', () => {
-        this.updateLinePos(line);
+        this.updateLineObject(line);
+        if (Date.now() - this.prevLineDrag > 30) {
+          try {
+            if (this.dataLayer.resolve()) {
+              this.updateDrawing();
+            }
+          } catch (e) {
+            console.error(e.message);
+          }
+          this.prevLineDrag = Date.now();
+        }
+      });
+
+      line.on('mouseenter', () => {
+        line.strokeWidth(5);
+        line.stroke('green');
+        this.layer.draw();
+      });
+      line.on('mouseleave', () => {
+        line.strokeWidth(3);
+        line.stroke('#244CE5');
+        this.layer.draw();
       });
     },
     setContainerEvents(container) {

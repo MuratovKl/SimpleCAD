@@ -18,6 +18,9 @@ class Kernel {
      * @param {Array<Constraint>} constraints constraints
      */
     solve(points, constraints) {
+        if (constraints.length === 0) {
+            return null;
+        }
         const pointsUsedInConstraints = [];
         this._pointsUsedInConstraints(pointsUsedInConstraints, constraints);
         const axisGlobal = [];
@@ -32,6 +35,7 @@ class Kernel {
 
         this._assignDeltasToPoints(deltas, points, axisGlobal);
 
+        return { status: "OK" };
     }
 
     _assignDeltasToPoints(deltas, points, axisGlobal) {

@@ -20,17 +20,38 @@ class DataLayer {
     // TODO добавить удаление связанных ограничений
   }
 
+  addTmpConstraint(constraint) {
+    this._constrains.push(constraint);
+  }
+
   addConstraint(constraint) {
+    let result;
     // TODO добавить проверку вводимых ограничений
     this._constrains.push(constraint);
 
     try {
-      this._kernel.solve(this._points, this._constrains);
+      result = this._kernel.solve(this._points, this._constrains);
       console.log(this._points);
     } catch (e) {
       console.error(e.message);
       this._constrains.pop();
     }
+    return result;
+  }
+
+  removeConstraint(id) {
+    const constraintIndex = this._constrains.findIndex((el) => el.id === id);
+    this._constrains.splice(constraintIndex, 1);
+  }
+
+  resolve() {
+    let result;
+    try {
+      result = this._kernel.solve(this._points, this._constrains);
+    } catch (e) {
+      console.error(e.message);
+    }
+    return result;
   }
 }
 
