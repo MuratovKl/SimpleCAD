@@ -414,7 +414,7 @@ function getDerivativeFunction_Parallel(constraint, unknowns, axisGlobal) {
 }
 
 /**
- * Function for Parallel constraint. 
+ * Function for Perpendicular constraint. 
  * This function fill local matrix J and vector F.
  * 
  * @param {Constraint} constraint 
@@ -477,8 +477,8 @@ function getDerivativeFunction_Perpendicular(constraint, unknowns, axisGlobal) {
     const g_ = -x1_s - dx1_s + x1_f + dx1_f;
     const h_ = -y1_s - dy1_s + y1_f + dy1_f;
 
-    // X1 * Y2 - X2 * Y1
-    F_Local[0] = (x1_f + dx1_f - x1_s - dx1_s)*(x2_f + dx2_f - x2_s - dx2_s) + (y1_f + dy1_f - y1_s - dy1_s)*(y2_f + dy2_f - y2_s - dy2_s)
+    // X1 * X2 - Y1 * Y2
+    F_Local[0] = (x1_f + dx1_f - x1_s - dx1_s)*(x2_f + dx2_f - x2_s - dx2_s) + (y1_f + dy1_f - y1_s - dy1_s)*(y2_f + dy2_f - y2_s - dy2_s);
     F_Local[1] = lambda * a_;
     F_Local[2] = lambda * b_;
     F_Local[3] = lambda * c_;
@@ -532,6 +532,104 @@ function getDerivativeFunction_Perpendicular(constraint, unknowns, axisGlobal) {
     return({axisLocal, JacobianLocal, F_Local, dim, localToGlobal});
 }
 
+/**
+ * Function for PointOnLine constraint. 
+ * This function fill local matrix J and vector F.
+ * 
+ * @param {Constraint} constraint 
+ * @returns {Object} Object with axis names, local Jacobian and local vector F
+ */
+function getDerivativeFunction_PointOnLine(constraint, unknowns, axisGlobal) {
+    const dim = 7;
+
+    const axisLocal = [];
+    axisLocal.push('lambda_' + constraint.id);
+    axisLocal.push('dx_' + constraint.lines[0][0].id);
+    axisLocal.push('dy_' + constraint.lines[0][0].id);
+    axisLocal.push('dx_' + constraint.points[0].id);
+    axisLocal.push('dy_' + constraint.points[0].id);
+    axisLocal.push('dx_' + constraint.lines[0][1].id);
+    axisLocal.push('dy_' + constraint.lines[0][1].id);
+    const localToGlobal = new Array(dim);
+    for (let i = 0; i < dim; i++) {
+        localToGlobal[i] = axisGlobal.indexOf(axisLocal[i]);
+    }
+
+    const JacobianLocal = new Array(dim);
+    const F_Local = new Array(dim);
+    for (let i = 0; i < dim; i++) {
+        F_Local[i] = 0;
+        JacobianLocal[i] = new Array(dim);
+        for (let j = 0; j < dim; j++) {
+            JacobianLocal[i][j] = 0;
+        }
+    }
+    
+    const x1_s = constraint.lines[0][0].x;
+    const y1_s = constraint.lines[0][0].y;
+    const xp = constraint.points[0].x;
+    const yp = constraint.points[0].y;
+    const x2_f = constraint.lines[0][1].x;
+    const y2_f = constraint.lines[0][1].y;
+
+    const lambda = unknowns[localToGlobal[0]];
+    const dx1_s = unknowns[localToGlobal[1]];
+    const dy1_s = unknowns[localToGlobal[2]];
+    const dxp = unknowns[localToGlobal[3]];
+    const dyp = unknowns[localToGlobal[4]];
+    const dx2_f = unknowns[localToGlobal[5]];
+    const dy2_f = unknowns[localToGlobal[6]];
+    
+    const a_ = yp + dyp - y2_f - dy2_f;
+    const b_ = -xp - dxp + x2_f + dx2_f;
+    const c_ = y2_f + dy2_f - y1_s - dy1_s;
+    const d_ = x1_s + dx1_s - x2_f - dx2_f;
+    const e_ = y1_s + dy1_s - yp - dyp;
+    const f_ = -x1_s - dx1_s + xp + dxp;
+
+    // F_Local[0] = (x2_f + dx2_f - xp - dxp)*(y1_s + dy1_s - yp - dyp) - (yp + dyp - y2_f - dy2_f)*(xp + dxp - x1_s - dx1_s);
+    F_Local[0] = (xp + dxp - x1_s - dx1_s)*(y2_f + dy2_f - yp - dyp) - (x2_f + dx2_f - xp - dxp)*(yp + dyp - y1_s - dy1_s);
+    F_Local[1] = lambda * a_;
+    F_Local[2] = lambda * b_;
+    F_Local[3] = lambda * c_;
+    F_Local[4] = lambda * d_;
+    F_Local[5] = lambda * e_;
+    F_Local[6] = lambda * f_;
+
+    JacobianLocal[0][1] = a_;
+    JacobianLocal[0][2] = b_;
+    JacobianLocal[0][3] = c_;
+    JacobianLocal[0][4] = d_;
+    JacobianLocal[0][5] = e_;
+    JacobianLocal[0][6] = f_;
+
+    JacobianLocal[1][0] = a_;
+    JacobianLocal[1][4] = lambda;
+    JacobianLocal[1][6] = -lambda;
+    
+    JacobianLocal[2][0] = b_;
+    JacobianLocal[2][3] = -lambda;
+    JacobianLocal[2][5] = lambda;
+
+    JacobianLocal[3][0] = c_;
+    JacobianLocal[3][2] = -lambda;
+    JacobianLocal[3][6] = lambda;
+    
+    JacobianLocal[4][0] = d_;
+    JacobianLocal[4][1] = lambda;
+    JacobianLocal[4][5] = -lambda;
+    
+    JacobianLocal[5][0] = e_;
+    JacobianLocal[5][2] = lambda;
+    JacobianLocal[5][4] = -lambda;
+    
+    JacobianLocal[6][0] = f_;
+    JacobianLocal[6][1] = -lambda;
+    JacobianLocal[6][3] = lambda;
+
+    return({axisLocal, JacobianLocal, F_Local, dim, localToGlobal});
+}
+
 export {
     getDerivativeFunction_Horizontal,
     getDerivativeFunction_Length,
@@ -540,4 +638,5 @@ export {
     getDerivativeFunction_Coincident,
     getDerivativeFunction_Parallel,
     getDerivativeFunction_Perpendicular,
+    getDerivativeFunction_PointOnLine,
 };

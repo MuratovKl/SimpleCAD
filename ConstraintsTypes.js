@@ -6,4 +6,5 @@ export const ConstraintsTypes = {
   'COINCIDENT': 'COINCIDENT',
   'PARALLEL': 'PARALLEL',
   'PERPENDICULAR':'PERPENDICULAR',
+  'POINT_ON_LINE':'POINT_ON_LINE',
 };

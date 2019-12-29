@@ -7,6 +7,7 @@ import {
     getDerivativeFunction_Coincident,
     getDerivativeFunction_Parallel,
     getDerivativeFunction_Perpendicular,
+    getDerivativeFunction_PointOnLine,
 } from './constraintFunctions.js';
 import { ConstraintsTypes } from '../ConstraintsTypes.js';
 
@@ -233,6 +234,9 @@ class Kernel {
                 case ConstraintsTypes.PERPENDICULAR:
                     constraintFunction = getDerivativeFunction_Perpendicular(constraint, unknowns, globalAxis);
                     break;
+                case ConstraintsTypes.POINT_ON_LINE:
+                    constraintFunction = getDerivativeFunction_PointOnLine(constraint, unknowns, globalAxis);
+                    break;
 
                 default:
                     break;
@@ -332,6 +336,31 @@ class Kernel {
         for (let constraint of constraints) {
             const pointsInConstraint = constraint.points;
             const linesInConstraints = constraint.lines;
+            if (linesInConstraints) {
+                for (let linePoints of linesInConstraints) {
+                    for (let point of linePoints) {
+                        let pointUsedInConstraints = pointsUsedInConstraints.find(elem => elem.id == point.id);
+                        if (!pointUsedInConstraints) {
+                            pointUsedInConstraints = new PointUsedInConstraints(point.id);
+                            pointsUsedInConstraints.push(pointUsedInConstraints);
+                        }
+                        switch (constraint.type) {
+                            case ConstraintsTypes.PARALLEL:
+                                pointUsedInConstraints.dx = true;
+                                pointUsedInConstraints.dy = true;
+                                break;
+                            case ConstraintsTypes.PERPENDICULAR:
+                                pointUsedInConstraints.dx = true;
+                                pointUsedInConstraints.dy = true;
+                                break;
+                            case ConstraintsTypes.POINT_ON_LINE:
+                                pointUsedInConstraints.dx = true;
+                                pointUsedInConstraints.dy = true;
+                                break;
+                        }
+                    }
+                }
+            }
             if (pointsInConstraint) {
                 for (let point of pointsInConstraint) {
                     let pointUsedInConstraints = pointsUsedInConstraints.find(elem => elem.id == point.id);
@@ -358,27 +387,10 @@ class Kernel {
                             pointUsedInConstraints.dx = true;
                             pointUsedInConstraints.dy = true;
                             break;
-                    }
-                }
-            }
-            if (linesInConstraints) {
-                for (let linePoints of linesInConstraints) {
-                    for (let point of linePoints) {
-                        let pointUsedInConstraints = pointsUsedInConstraints.find(elem => elem.id == point.id);
-                        if (!pointUsedInConstraints) {
-                            pointUsedInConstraints = new PointUsedInConstraints(point.id);
-                            pointsUsedInConstraints.push(pointUsedInConstraints);
-                        }
-                        switch (constraint.type) {
-                            case ConstraintsTypes.PARALLEL:
-                                pointUsedInConstraints.dx = true;
-                                pointUsedInConstraints.dy = true;
-                                break;
-                            case ConstraintsTypes.PERPENDICULAR:
-                                pointUsedInConstraints.dx = true;
-                                pointUsedInConstraints.dy = true;
-                                break;
-                        }
+                        case ConstraintsTypes.POINT_ON_LINE:
+                            pointUsedInConstraints.dx = true;
+                            pointUsedInConstraints.dy = true;
+                            break;
                     }
                 }
             }
