@@ -4,4 +4,6 @@ export const ConstraintsTypes = {
   'VERTICAL': 'VERTICAL',
   'FIX_POINT': 'FIX_POINT',
   'COINCIDENT': 'COINCIDENT',
+  'PARALLEL': 'PARALLEL',
+  'PERPENDICULAR':'PERPENDICULAR',
 };

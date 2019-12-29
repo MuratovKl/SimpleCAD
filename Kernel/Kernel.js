@@ -1,11 +1,16 @@
 import { PointUsedInConstraints } from './PointUsedInConstraints.js';
 import { 
-        getDerivativeFunction_Horizontal,
-        getDerivativeFunction_Length,
-        getDerivativeFunction_FixPoint, 
-        getDerivativeFunction_Vertical,
-        getDerivativeFunction_Coincident
-    } from './constraintFunctions.js';
+    getDerivativeFunction_Horizontal,
+    getDerivativeFunction_Length,
+    getDerivativeFunction_FixPoint, 
+    getDerivativeFunction_Vertical,
+    getDerivativeFunction_Coincident,
+    getDerivativeFunction_Parallel,
+    getDerivativeFunction_Perpendicular,
+} from './constraintFunctions.js';
+import { ConstraintsTypes } from '../ConstraintsTypes.js';
+
+
 /**
  * Kernel of CAD system
  */
@@ -28,7 +33,7 @@ class Kernel {
 
         let deltas
         try {
-            deltas = this._NewtonMethod(axisGlobal, constraints, 10, 1e-3);
+            deltas = this._NewtonMethod(axisGlobal, constraints, 50, 1e-12);
         } catch (e) {
             throw e;
         }
@@ -176,7 +181,7 @@ class Kernel {
 
             if (A[i][i] == 0) {
                 // throw new Error('Gauss: A[' + i + '][' + i + '] = 0');
-                A[i][i] = 1e-12; // TODO something.
+                A[i][i] = 1e-18; // TODO something.
             }
             
             for (let j = i+1; j < dim; j++) {
@@ -207,20 +212,26 @@ class Kernel {
         for (let constraint of constraints) {
             let constraintFunction;
             switch (constraint.type) {
-                case 'HORIZONTAL':
+                case ConstraintsTypes.HORIZONTAL:
                     constraintFunction = getDerivativeFunction_Horizontal(constraint, unknowns, globalAxis);
                     break;
-                case 'VERTICAL':
+                case ConstraintsTypes.VERTICAL:
                     constraintFunction = getDerivativeFunction_Vertical(constraint, unknowns, globalAxis);
                     break;
-                case 'LENGTH':
+                case ConstraintsTypes.LENGTH:
                     constraintFunction = getDerivativeFunction_Length(constraint, unknowns, globalAxis);
                     break;
-                case 'FIX_POINT':
+                case ConstraintsTypes.FIX_POINT:
                     constraintFunction = getDerivativeFunction_FixPoint(constraint, unknowns, globalAxis);
                     break;
-                case 'COINCIDENT':
+                case ConstraintsTypes.COINCIDENT:
                     constraintFunction = getDerivativeFunction_Coincident(constraint, unknowns, globalAxis);
+                    break;
+                case ConstraintsTypes.PARALLEL:
+                    constraintFunction = getDerivativeFunction_Parallel(constraint, unknowns, globalAxis);
+                    break;
+                case ConstraintsTypes.PERPENDICULAR:
+                    constraintFunction = getDerivativeFunction_Perpendicular(constraint, unknowns, globalAxis);
                     break;
 
                 default:
@@ -242,6 +253,8 @@ class Kernel {
         for (let k = startDXorDY; k < globalAxis.length; k++) {
             F[k] += unknowns[k];
         }
+        // console.log({Jacobian});
+        // console.log(F);
     }
 
     // Ансамблирование общей и локальной матиц
@@ -286,11 +299,11 @@ class Kernel {
     _fillAxisGlobalArray(axisGlobal, pointsUsedInConstraints, constraints) {
         for (let constraint of constraints) {
             switch (constraint.type) {
-                case 'FIX_POINT':
+                case ConstraintsTypes.FIX_POINT:
                     axisGlobal.push('lambda_' + constraint.id + '_1');
                     axisGlobal.push('lambda_' + constraint.id + '_2');
                     break;
-                case 'COINCIDENT':
+                case ConstraintsTypes.COINCIDENT:
                     axisGlobal.push('lambda_' + constraint.id + '_1');
                     axisGlobal.push('lambda_' + constraint.id + '_2');
                     break;
@@ -318,35 +331,59 @@ class Kernel {
     _pointsUsedInConstraints(pointsUsedInConstraints, constraints) {
         for (let constraint of constraints) {
             const pointsInConstraint = constraint.points;
-            for (let point of pointsInConstraint) {
-                let pointUsedInConstraints = pointsUsedInConstraints.find(elem => elem.id == point.id);
-                if (!pointUsedInConstraints) {
-                    pointUsedInConstraints = new PointUsedInConstraints(point.id);
-                    pointsUsedInConstraints.push(pointUsedInConstraints);
+            const linesInConstraints = constraint.lines;
+            if (pointsInConstraint) {
+                for (let point of pointsInConstraint) {
+                    let pointUsedInConstraints = pointsUsedInConstraints.find(elem => elem.id == point.id);
+                    if (!pointUsedInConstraints) {
+                        pointUsedInConstraints = new PointUsedInConstraints(point.id);
+                        pointsUsedInConstraints.push(pointUsedInConstraints);
+                    }
+                    switch (constraint.type) {
+                        case ConstraintsTypes.HORIZONTAL:
+                            pointUsedInConstraints.dy = true;
+                            break;
+                        case ConstraintsTypes.VERTICAL:
+                            pointUsedInConstraints.dx = true;
+                            break;
+                        case ConstraintsTypes.LENGTH:
+                            pointUsedInConstraints.dx = true;
+                            pointUsedInConstraints.dy = true;
+                            break;
+                        case ConstraintsTypes.FIX_POINT:
+                            pointUsedInConstraints.dx = true;
+                            pointUsedInConstraints.dy = true;
+                            break;
+                        case ConstraintsTypes.COINCIDENT:
+                            pointUsedInConstraints.dx = true;
+                            pointUsedInConstraints.dy = true;
+                            break;
+                    }
                 }
-                switch (constraint.type) {
-                    case 'HORIZONTAL':
-                        pointUsedInConstraints.dy = true;
-                        break;
-                    case 'VERTICAL':
-                        pointUsedInConstraints.dx = true;
-                        break;
-                    case 'LENGTH':
-                        pointUsedInConstraints.dx = true;
-                        pointUsedInConstraints.dy = true;
-                        break;
-                    case 'FIX_POINT':
-                        pointUsedInConstraints.dx = true;
-                        pointUsedInConstraints.dy = true;
-                        break;
-                    case 'COINCIDENT':
-                        pointUsedInConstraints.dx = true;
-                        pointUsedInConstraints.dy = true;
-                        break;
+            }
+            if (linesInConstraints) {
+                for (let linePoints of linesInConstraints) {
+                    for (let point of linePoints) {
+                        let pointUsedInConstraints = pointsUsedInConstraints.find(elem => elem.id == point.id);
+                        if (!pointUsedInConstraints) {
+                            pointUsedInConstraints = new PointUsedInConstraints(point.id);
+                            pointsUsedInConstraints.push(pointUsedInConstraints);
+                        }
+                        switch (constraint.type) {
+                            case ConstraintsTypes.PARALLEL:
+                                pointUsedInConstraints.dx = true;
+                                pointUsedInConstraints.dy = true;
+                                break;
+                            case ConstraintsTypes.PERPENDICULAR:
+                                pointUsedInConstraints.dx = true;
+                                pointUsedInConstraints.dy = true;
+                                break;
+                        }
+                    }
                 }
             }
         }
     }
 }
 
-export {Kernel};
+export { Kernel };

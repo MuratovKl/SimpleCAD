@@ -164,7 +164,7 @@ export default {
           }
         } else if (this.selectedInstrument === 6) {
           if (!this.tmpConstraint) {
-            const constraint = new Constraint('LENGTH', [ point ]);
+            const constraint = new Constraint({ type: 'LENGTH', points: [point] });
             this.tmpConstraint = constraint;
             if (point.relatedConstraints[constraint.type]) {
               point.relatedConstraints[constraint.type].push(constraint);
@@ -189,7 +189,7 @@ export default {
           }
         } else if (this.selectedInstrument === 8) {
           if (!this.tmpConstraint) {
-            const constraint = new Constraint('COINCIDENT', [ point ]);
+            const constraint = new Constraint({ type: 'COINCIDENT', points: [point] });
             this.tmpConstraint = constraint;
             if (point.relatedConstraints[constraint.type]) {
               point.relatedConstraints[constraint.type].push(constraint);
@@ -206,13 +206,13 @@ export default {
               point.relatedConstraints[this.tmpConstraint.type] = [ this.tmpConstraint ];
             }
             if (constraintPoint.relatedConstraints['FIX_POINT']) {
-              const fixConstraint = new Constraint('FIX_POINT', [ point.relatedPoint ]);
+              const fixConstraint = new Constraint({ type: 'FIX_POINT', points: [point.relatedPoint] });
               point.relatedConstraints['FIX_POINT'] = [ fixConstraint ];
               point.draggable(false);
               point.fill('grey');
               this.dataLayer.addConstraint(fixConstraint);
             } else if (point.relatedConstraints['FIX_POINT']) {
-              const fixConstraint = new Constraint('FIX_POINT', [ constraintPoint.relatedPoint ]);
+              const fixConstraint = new Constraint({ type: 'FIX_POINT', points: [constraintPoint.relatedPoint] });
               constraintPoint.relatedConstraints['FIX_POINT'] = [ fixConstraint ];
               constraintPoint.draggable(false);
               constraintPoint.fill('grey');
@@ -222,7 +222,7 @@ export default {
             this.tmpConstraint = null;
           }
         } else if (this.selectedInstrument === 9 && !('FIX_POINT' in point.relatedConstraints)) {
-          const constraint = new Constraint('FIX_POINT', [ point.relatedPoint ]);
+          const constraint = new Constraint({ type: 'FIX_POINT', points: [point.relatedPoint] });
           point.relatedConstraints[constraint.type] = [ constraint ];
           point.draggable(false);
           point.fill('grey');
@@ -267,7 +267,7 @@ export default {
 
       point.on('dragstart', () => {
         if (!point.relatedConstraints['FIX_POINT']) {
-          const tmpConstraint = new Constraint('FIX_POINT', [ point.relatedPoint ]);
+          const tmpConstraint = new Constraint({ type: 'FIX_POINT', points: [point.relatedPoint] });
           this.tmpConstraintId = tmpConstraint.id;
           this.dataLayer.addTmpConstraint(tmpConstraint);
         }
@@ -365,7 +365,7 @@ export default {
         } else if (this.selectedInstrument === 5 && !('HORIZONTAL' in line.relatedConstraints)) {
           const points = [line.startPoint.relatedPoint, line.endPoint.relatedPoint];
           console.log('Line Handler Horizontal');
-          const constraint = new Constraint('HORIZONTAL', points);
+          const constraint = new Constraint({ type: 'HORIZONTAL', points });
           line.relatedConstraints[constraint.type] = [ constraint ];
           this.dataLayer.addConstraint(constraint);
           this.updateDrawing();
@@ -373,7 +373,7 @@ export default {
         } else if (this.selectedInstrument === 7 && !('VERTICAL' in line.relatedConstraints)) {
           const points = [line.startPoint.relatedPoint, line.endPoint.relatedPoint];
           console.log('Line Handler Vertical');
-          const constraint = new Constraint('VERTICAL', points);
+          const constraint = new Constraint({ type: 'VERTICAL', points });
           line.relatedConstraints[constraint.type] = [ constraint ];
           this.dataLayer.addConstraint(constraint);
           this.updateDrawing();
