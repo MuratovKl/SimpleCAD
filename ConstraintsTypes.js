@@ -7,4 +7,5 @@ export const ConstraintsTypes = {
   'PARALLEL': 'PARALLEL',
   'PERPENDICULAR':'PERPENDICULAR',
   'POINT_ON_LINE':'POINT_ON_LINE',
+  'ANGLE':'ANGLE',
 };

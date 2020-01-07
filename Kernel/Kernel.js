@@ -8,6 +8,7 @@ import {
     getDerivativeFunction_Parallel,
     getDerivativeFunction_Perpendicular,
     getDerivativeFunction_PointOnLine,
+    getDerivativeFunction_Angle,
 } from './constraintFunctions.js';
 import { ConstraintsTypes } from '../ConstraintsTypes.js';
 
@@ -34,7 +35,7 @@ class Kernel {
 
         let deltas
         try {
-            deltas = this._NewtonMethod(axisGlobal, constraints, 50, 1e-12);
+            deltas = this._NewtonMethod(axisGlobal, constraints, 100, 1e-12);
         } catch (e) {
             throw e;
         }
@@ -147,6 +148,7 @@ class Kernel {
         return max;
     }
 
+    // TODO change solver
     _solveSystemOfEquation(A, B) {
         return this._solveSystemByGauss(A, B);
     }
@@ -236,6 +238,9 @@ class Kernel {
                     break;
                 case ConstraintsTypes.POINT_ON_LINE:
                     constraintFunction = getDerivativeFunction_PointOnLine(constraint, unknowns, globalAxis);
+                    break;
+                case ConstraintsTypes.ANGLE:
+                    constraintFunction = getDerivativeFunction_Angle(constraint, unknowns, globalAxis);
                     break;
 
                 default:
@@ -354,6 +359,10 @@ class Kernel {
                                 pointUsedInConstraints.dy = true;
                                 break;
                             case ConstraintsTypes.POINT_ON_LINE:
+                                pointUsedInConstraints.dx = true;
+                                pointUsedInConstraints.dy = true;
+                                break;
+                            case ConstraintsTypes.ANGLE:
                                 pointUsedInConstraints.dx = true;
                                 pointUsedInConstraints.dy = true;
                                 break;
