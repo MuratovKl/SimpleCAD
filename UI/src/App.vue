@@ -101,6 +101,46 @@
               Фиксация точки
             </button>
           </li>
+          <li class="instruments-list__el">
+            <button
+              @click="selectInstrument"
+              data-number="10"
+              class="instrument-btn"
+              :class="{ 'instrument-btn_active': selectedInstrument === 10}"
+            >
+              Параллельность
+            </button>
+          </li>
+          <li class="instruments-list__el">
+            <button
+              @click="selectInstrument"
+              data-number="11"
+              class="instrument-btn"
+              :class="{ 'instrument-btn_active': selectedInstrument === 11}"
+            >
+              Угол между линиями
+            </button>
+          </li>
+          <li class="instruments-list__el">
+            <button
+              @click="selectInstrument"
+              data-number="12"
+              class="instrument-btn"
+              :class="{ 'instrument-btn_active': selectedInstrument === 12}"
+            >
+              Перпендикулярность
+            </button>
+          </li>
+          <li class="instruments-list__el">
+            <button
+              @click="selectInstrument"
+              data-number="13"
+              class="instrument-btn"
+              :class="{ 'instrument-btn_active': selectedInstrument === 13}"
+            >
+              Точка на прямой
+            </button>
+          </li>
         </ul>
       </div>
     </div>
@@ -228,6 +268,26 @@ export default {
           point.fill('grey');
           this.dataLayer.addConstraint(constraint);
           this.updateDrawing();
+        } else if (this.selectedInstrument === 13) {
+          if (!this.tmpConstraint) {
+            const constraint = new Constraint({ type: 'POINT_ON_LINE', points: [point.relatedPoint] });
+            this.tmpConstraint = constraint;
+            if (point.relatedConstraints[constraint.type]) {
+              point.relatedConstraints[constraint.type].push(constraint);
+            } else {
+              point.relatedConstraints[constraint.type] = [ constraint ];
+            }
+          } else {
+            this.tmpConstraint.points = [point.relatedPoint];
+            this.dataLayer.addConstraint(this.tmpConstraint);
+            if (point.relatedConstraints[this.tmpConstraint.type]) {
+              point.relatedConstraints[this.tmpConstraint.type].push(this.tmpConstraint);
+            } else {
+              point.relatedConstraints[this.tmpConstraint.type] = [ this.tmpConstraint ];
+            }
+            this.updateDrawing();
+            this.tmpConstraint = null;
+          }
         }
       });
       point.on('dragmove', (event) => {
@@ -377,6 +437,93 @@ export default {
           line.relatedConstraints[constraint.type] = [ constraint ];
           this.dataLayer.addConstraint(constraint);
           this.updateDrawing();
+        } else if (this.selectedInstrument === 10) {
+          if (!this.tmpConstraint) {
+            const constraint = new Constraint({ type: 'PARALLEL', lines: [[ line.startPoint.relatedPoint, line.endPoint.relatedPoint ]] });
+            this.tmpConstraint = constraint;
+            if (line.relatedConstraints[constraint.type]) {
+              line.relatedConstraints[constraint.type].push(constraint);
+            } else {
+              line.relatedConstraints[constraint.type] = [ constraint ];
+            }
+          } else {
+            this.tmpConstraint.lines.push([ line.startPoint.relatedPoint, line.endPoint.relatedPoint ]);
+            this.dataLayer.addConstraint(this.tmpConstraint);
+            if (line.relatedConstraints[this.tmpConstraint.type]) {
+              line.relatedConstraints[this.tmpConstraint.type].push(this.tmpConstraint);
+            } else {
+              line.relatedConstraints[this.tmpConstraint.type] = [ this.tmpConstraint ];
+            }
+            this.updateDrawing();
+            this.tmpConstraint = null;
+          }
+        } else if (this.selectedInstrument === 11) {
+          if (!this.tmpConstraint) {
+            const constraint = new Constraint({ type: 'ANGLE', lines: [[ line.startPoint.relatedPoint, line.endPoint.relatedPoint ]] });
+            this.tmpConstraint = constraint;
+            if (line.relatedConstraints[constraint.type]) {
+              line.relatedConstraints[constraint.type].push(constraint);
+            } else {
+              line.relatedConstraints[constraint.type] = [ constraint ];
+            }
+          } else {
+            const answer = parseFloat(prompt('Введите угол:'));
+            if (isNaN(answer)) {
+              alert('Введено неверное значение угла');
+              this.tmpConstraint = null;
+              return;
+            }
+            this.tmpConstraint.lines.push([ line.startPoint.relatedPoint, line.endPoint.relatedPoint ]);
+            this.tmpConstraint.value = { val: answer, mode: 'DEG' };
+            this.dataLayer.addConstraint(this.tmpConstraint);
+            if (line.relatedConstraints[this.tmpConstraint.type]) {
+              line.relatedConstraints[this.tmpConstraint.type].push(this.tmpConstraint);
+            } else {
+              line.relatedConstraints[this.tmpConstraint.type] = [ this.tmpConstraint ];
+            }
+            this.updateDrawing();
+            this.tmpConstraint = null;
+          }
+        } else if (this.selectedInstrument === 12) {
+          if (!this.tmpConstraint) {
+            const constraint = new Constraint({ type: 'PERPENDICULAR', lines: [[ line.startPoint.relatedPoint, line.endPoint.relatedPoint ]] });
+            this.tmpConstraint = constraint;
+            if (line.relatedConstraints[constraint.type]) {
+              line.relatedConstraints[constraint.type].push(constraint);
+            } else {
+              line.relatedConstraints[constraint.type] = [ constraint ];
+            }
+          } else {
+            this.tmpConstraint.lines.push([ line.startPoint.relatedPoint, line.endPoint.relatedPoint ]);
+            this.dataLayer.addConstraint(this.tmpConstraint);
+            if (line.relatedConstraints[this.tmpConstraint.type]) {
+              line.relatedConstraints[this.tmpConstraint.type].push(this.tmpConstraint);
+            } else {
+              line.relatedConstraints[this.tmpConstraint.type] = [ this.tmpConstraint ];
+            }
+            this.updateDrawing();
+            this.tmpConstraint = null;
+          }
+        } else if (this.selectedInstrument === 13) {
+          if (!this.tmpConstraint) {
+            const constraint = new Constraint({ type: 'POINT_ON_LINE', lines: [[ line.startPoint.relatedPoint, line.endPoint.relatedPoint ]] });
+            this.tmpConstraint = constraint;
+            if (line.relatedConstraints[constraint.type]) {
+              line.relatedConstraints[constraint.type].push(constraint);
+            } else {
+              line.relatedConstraints[constraint.type] = [ constraint ];
+            }
+          } else {
+            this.tmpConstraint.lines = [[ line.startPoint.relatedPoint, line.endPoint.relatedPoint ]];
+            this.dataLayer.addConstraint(this.tmpConstraint);
+            if (line.relatedConstraints[this.tmpConstraint.type]) {
+              line.relatedConstraints[this.tmpConstraint.type].push(this.tmpConstraint);
+            } else {
+              line.relatedConstraints[this.tmpConstraint.type] = [ this.tmpConstraint ];
+            }
+            this.updateDrawing();
+            this.tmpConstraint = null;
+          }
         }
       });
       line.on('dragmove', () => {
