@@ -2,7 +2,7 @@ import { PointUsedInConstraints } from './PointUsedInConstraints.js';
 import { 
     getDerivativeFunction_Horizontal,
     getDerivativeFunction_Length,
-    getDerivativeFunction_FixPoint, 
+    getDerivativeFunction_FixPoint,
     getDerivativeFunction_Vertical,
     getDerivativeFunction_Coincident,
     getDerivativeFunction_Parallel,
@@ -35,7 +35,7 @@ class Kernel {
 
         let deltas
         try {
-            deltas = this._NewtonMethod(axisGlobal, constraints, 100, 1e-12);
+            deltas = this._NewtonMethod(axisGlobal, constraints, 1200, 1e-12);
         } catch (e) {
             throw e;
         }
@@ -183,8 +183,8 @@ class Kernel {
             // end main element choising and swapping
 
             if (A[i][i] == 0) {
-                // throw new Error('Gauss: A[' + i + '][' + i + '] = 0');
-                A[i][i] = 1e-18; // TODO something.
+                throw new Error('Gauss: A[' + i + '][' + i + '] = 0');
+                // A[i][i] = 1e-18; // TODO something.
             }
             
             for (let j = i+1; j < dim; j++) {

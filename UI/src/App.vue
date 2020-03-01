@@ -313,7 +313,7 @@ export default {
           line.points(linePoints);
           this.layer.draw();
         }
-        if (Date.now() - this.prevLineDrag > 16) {
+        if (Date.now() - this.prevLineDrag > 5) {
           try {
             if (this.dataLayer.resolve()) {
               this.updateDrawing();
@@ -528,7 +528,7 @@ export default {
       });
       line.on('dragmove', () => {
         this.updateLineObject(line);
-        if (Date.now() - this.prevLineDrag > 30) {
+        if (Date.now() - this.prevLineDrag > 5) {
           try {
             if (this.dataLayer.resolve()) {
               this.updateDrawing();
