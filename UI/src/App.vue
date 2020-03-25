@@ -162,7 +162,7 @@ export default {
       layer: null,
       dataLayer: null,
       kernel: null,
-      selectedInstrument: 1,
+      selectedInstrument: 4,
       drawingPoints: [],
       endOfLine: false,
       tmpConstraint: null,

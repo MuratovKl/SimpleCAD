@@ -9,6 +9,7 @@ import {
     getDerivativeFunction_Perpendicular,
     getDerivativeFunction_PointOnLine,
     getDerivativeFunction_Angle,
+    getDerivativeFunction_EqualLines,
 } from './constraintFunctions.js';
 import { ConstraintsTypes } from '../ConstraintsTypes.js';
 
@@ -35,7 +36,7 @@ class Kernel {
 
         let deltas
         try {
-            deltas = this._NewtonMethod(axisGlobal, constraints, 1200, 1e-12);
+            deltas = this._NewtonMethod(axisGlobal, constraints, 1500, 1e-12);
         } catch (e) {
             throw e;
         }
@@ -95,6 +96,7 @@ class Kernel {
         let deltaX = new Array(arraySize);
         this._fillVectorWithNumber(X, arraySize, 0);
         this._fillVectorWithNumber(deltaX, arraySize, 0);
+        let prevS = -1;
         
         while (k < maxK && S > epsilon) {
             this._fill2dArrayWithNumber(Jacobian, arraySize, arraySize, 0);
@@ -119,6 +121,7 @@ class Kernel {
                 X[i] += deltaX[i];
             }
 
+            prevS = S;
             S = this._calcNorm(deltaX)
             k++;
         }
@@ -126,7 +129,7 @@ class Kernel {
         // check. Why loop has been finished
         if (S > epsilon) {
             throw Error('NewtonMethod: Can\'t solve.' + 
-                '\nS > epsilon: epsilon=' + epsilon + ' S='+S + '\nIterations: ' + maxK);
+                '\nS > epsilon: epsilon=' + epsilon + ' S='+S + '\nPrevS = ' + prevS + '\nIterations: ' + maxK);
         }
 
         return X;
@@ -242,6 +245,9 @@ class Kernel {
                 case ConstraintsTypes.ANGLE:
                     constraintFunction = getDerivativeFunction_Angle(constraint, unknowns, globalAxis);
                     break;
+                case ConstraintsTypes.EQUAL_LINES:
+                    constraintFunction = getDerivativeFunction_EqualLines(constraint, unknowns, globalAxis);
+                    break;
 
                 default:
                     break;
@@ -262,8 +268,6 @@ class Kernel {
         for (let k = startDXorDY; k < globalAxis.length; k++) {
             F[k] += unknowns[k];
         }
-        // console.log({Jacobian});
-        // console.log(F);
     }
 
     // Ансамблирование общей и локальной матиц
@@ -363,6 +367,10 @@ class Kernel {
                                 pointUsedInConstraints.dy = true;
                                 break;
                             case ConstraintsTypes.ANGLE:
+                                pointUsedInConstraints.dx = true;
+                                pointUsedInConstraints.dy = true;
+                                break;
+                            case ConstraintsTypes.EQUAL_LINES:
                                 pointUsedInConstraints.dx = true;
                                 pointUsedInConstraints.dy = true;
                                 break;

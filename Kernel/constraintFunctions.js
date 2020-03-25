@@ -811,6 +811,119 @@ function getDerivativeFunction_Angle(constraint, unknowns, axisGlobal) {
     return({axisLocal, JacobianLocal, F_Local, dim, localToGlobal});
 }
 
+
+/**
+ * Function for EqualLines constraint. 
+ * This function fill local matrix J and vector F.
+ * 
+ * @param {Constraint} constraint 
+ * @returns {Object} Object with axis names, local Jacobian and local vector F
+ */
+function getDerivativeFunction_EqualLines(constraint, unknowns, axisGlobal) {
+    const dim = 9;
+
+    const axisLocal = [];
+    axisLocal.push('lambda_' + constraint.id);
+    for (let i = 0; i < 2; i++) {
+        axisLocal.push('dx_' + constraint.lines[i][0].id);
+        axisLocal.push('dy_' + constraint.lines[i][0].id);
+        axisLocal.push('dx_' + constraint.lines[i][1].id);
+        axisLocal.push('dy_' + constraint.lines[i][1].id);
+    }
+    const localToGlobal = new Array(dim);
+    for (let i = 0; i < dim; i++) {
+        localToGlobal[i] = axisGlobal.indexOf(axisLocal[i]);
+    }
+
+    const JacobianLocal = new Array(dim);
+    const F_Local = new Array(dim);
+    for (let i = 0; i < dim; i++) {
+        F_Local[i] = 0;
+        JacobianLocal[i] = new Array(dim);
+        for (let j = 0; j < dim; j++) {
+            JacobianLocal[i][j] = 0;
+        }
+    }
+
+    const line1 = constraint.lines[0];
+    const line2 = constraint.lines[1];
+    
+    const x1_s = line1[0].x;
+    const y1_s = line1[0].y;
+    const x1_f = line1[1].x;
+    const y1_f = line1[1].y
+    const x2_s = line2[0].x;
+    const y2_s = line2[0].y;
+    const x2_f = line2[1].x;
+    const y2_f = line2[1].y;
+    
+    const lambda = unknowns[localToGlobal[0]];
+    const dx1_s = unknowns[localToGlobal[1]];
+    const dy1_s = unknowns[localToGlobal[2]];
+    const dx1_f = unknowns[localToGlobal[3]];
+    const dy1_f = unknowns[localToGlobal[4]];
+    const dx2_s = unknowns[localToGlobal[5]];
+    const dy2_s = unknowns[localToGlobal[6]];
+    const dx2_f = unknowns[localToGlobal[7]];
+    const dy2_f = unknowns[localToGlobal[8]];
+    
+    F_Local[0] = Math.pow((x1_f+dx1_f - x1_s-dx1_s), 2) + Math.pow((y1_f+dy1_f - y1_s-dy1_s), 2)
+            - Math.pow((x2_f+dx2_f - x2_s-dx2_s), 2) - Math.pow((y2_f+dy2_f - y2_s - dy2_s), 2); 
+    F_Local[1] = -2 * lambda * (x1_f+dx1_f - x1_s-dx1_s);
+    F_Local[2] = -2 * lambda * (y1_f+dy1_f - y1_s-dy1_s);
+    F_Local[3] = 2 * lambda * (x1_f+dx1_f - x1_s-dx1_s);
+    F_Local[4] = 2 * lambda * (y1_f+dy1_f - y1_s-dy1_s);
+    F_Local[5] = 2 * lambda * (x2_f+dx2_f - x2_s-dx2_s);
+    F_Local[6] = 2 * lambda * (y2_f+dy2_f - y2_s - dy2_s);
+    F_Local[7] = -2 * lambda * (x2_f+dx2_f - x2_s-dx2_s);
+    F_Local[8] = -2 * lambda * (y2_f+dy2_f - y2_s - dy2_s);
+
+    JacobianLocal[0][0] = 0; // 0
+    JacobianLocal[0][1] = -2 * (x1_f + dx1_f - x1_s - dx1_s);
+    JacobianLocal[0][2] = -2 * (y1_f + dy1_f - y1_s - dy1_s);
+    JacobianLocal[0][3] = 2 * (x1_f + dx1_f - x1_s - dx1_s);
+    JacobianLocal[0][4] = 2 * (y1_f + dy1_f - y1_s - dy1_s);
+    JacobianLocal[0][5] = 2 * (x2_f + dx2_f - x2_s - dx2_s);
+    JacobianLocal[0][6] = 2 * (y2_f + dy2_f - y2_s - dy2_s);
+    JacobianLocal[0][7] = -2 * (x2_f + dx2_f - x2_s - dx2_s);
+    JacobianLocal[0][8] = -2 * (y2_f + dy2_f - y2_s - dy2_s);
+
+    JacobianLocal[1][0] = -2 * (x1_f + dx1_f - x1_s - dx1_s);
+    JacobianLocal[1][1] = 2 * lambda;
+    JacobianLocal[1][3] = -2 * lambda;
+
+    JacobianLocal[2][0] = -2 * (y1_f + dy1_f - y1_s - dy1_s);
+    JacobianLocal[2][2] = 2 * lambda;
+    JacobianLocal[2][4] = -2 * lambda;
+
+    JacobianLocal[3][0] = 2 * (x1_f + dx1_f - x1_s - dx1_s);
+    JacobianLocal[3][1] = -2 * lambda;
+    JacobianLocal[3][3] = 2 * lambda;
+
+    JacobianLocal[4][0] = 2 * (y1_f + dy1_f - y1_s - dy1_s);
+    JacobianLocal[4][2] = -2 * lambda;
+    JacobianLocal[4][4] = 2 * lambda;
+
+    JacobianLocal[5][0] = 2 * (x2_f + dx2_f - x2_s - dx2_s);
+    JacobianLocal[5][5] = -2 * lambda;
+    JacobianLocal[5][7] = 2 * lambda;
+
+    JacobianLocal[6][0] = 2 * (y2_f + dy2_f - y2_s - dy2_s);
+    JacobianLocal[6][6] = -2 * lambda;
+    JacobianLocal[6][8] = 2 * lambda;
+
+    JacobianLocal[7][0] = -2 * (x2_f + dx2_f - x2_s - dx2_s);
+    JacobianLocal[7][5] = 2 * lambda;
+    JacobianLocal[7][7] = -2 * lambda;
+
+    JacobianLocal[6][0] = -2 * (y2_f + dy2_f - y2_s - dy2_s);
+    JacobianLocal[6][6] = 2 * lambda;
+    JacobianLocal[6][8] = -2 * lambda;
+
+    return({axisLocal, JacobianLocal, F_Local, dim, localToGlobal});
+}
+
+
 export {
     getDerivativeFunction_Horizontal,
     getDerivativeFunction_Length,
@@ -821,4 +934,5 @@ export {
     getDerivativeFunction_Perpendicular,
     getDerivativeFunction_PointOnLine,
     getDerivativeFunction_Angle,
+    getDerivativeFunction_EqualLines,
 };

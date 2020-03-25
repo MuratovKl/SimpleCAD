@@ -8,4 +8,5 @@ export const ConstraintsTypes = {
   'PERPENDICULAR':'PERPENDICULAR',
   'POINT_ON_LINE':'POINT_ON_LINE',
   'ANGLE':'ANGLE',
+  'EQUAL_LINES': 'EQUAL_LINES',
 };
