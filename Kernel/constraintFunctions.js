@@ -923,6 +923,180 @@ function getDerivativeFunction_EqualLines(constraint, unknowns, axisGlobal) {
     return({axisLocal, JacobianLocal, F_Local, dim, localToGlobal});
 }
 
+/**
+ * Function for ArcLength constraint. 
+ * This function fill local matrix J and vector F.
+ * 
+ * @param {Constraint} constraint 
+ * @returns {Object} Object with axis names, local Jacobian and local vector F
+ */
+function getDerivativeFunction_ArcLength(constraint, unknowns, axisGlobal) {
+    const dim = 4;
+
+    const axisLocal = [];
+    axisLocal.push('lambda_' + constraint.id);
+    axisLocal.push('dR_' + constraint.elements[0].id + '_' + constraint.elements[0].type)
+    axisLocal.push('dFi1_' + constraint.elements[0].id + '_' + constraint.elements[0].type)
+    axisLocal.push('dFi2_' + constraint.elements[0].id + '_' + constraint.elements[0].type)
+
+    const localToGlobal = new Array(dim);
+    for (let i = 0; i < dim; i++) {
+        localToGlobal[i] = axisGlobal.indexOf(axisLocal[i]);
+    }
+
+    const JacobianLocal = new Array(dim);
+    const F_Local = new Array(dim);
+    for (let i = 0; i < dim; i++) {
+        F_Local[i] = 0;
+        JacobianLocal[i] = new Array(dim);
+        for (let j = 0; j < dim; j++) {
+            JacobianLocal[i][j] = 0;
+        }
+    }
+
+    const arc = constraint.elements[0];
+
+    const R = arc.R;
+    let fi1 = arc.fi1;
+    let fi2 = arc.fi2;
+    if (arc.angleMode && arc.angleMode == 'DEG') {
+        fi1 *= Math.PI / 180;
+        fi2 *= Math.PI / 180;
+    }
+
+    const length = constraint.value
+
+    const lambda = unknowns[localToGlobal[0]];
+    const dR = unknowns[localToGlobal[1]];
+    const dFi1 = unknowns[localToGlobal[2]];
+    const dFi2 = unknowns[localToGlobal[3]];
+    
+    F_Local[0] = (R + dR) * (fi2 + dFi2 - fi1 - dFi1) - length;
+    F_Local[1] = lambda * (fi2 + dFi2 - fi1 - dFi1);
+    F_Local[2] = -lambda * (R + dR);
+    F_Local[3] = lambda * (R + dR);
+
+    JacobianLocal[0][0] = 0;
+    JacobianLocal[0][1] = (fi2 + dFi2 - fi1 - dFi1);
+    JacobianLocal[0][2] = (-R - dR);
+    JacobianLocal[0][3] = (R + dR);
+
+    JacobianLocal[1][0] = (fi2 + dFi2 - fi1 - dFi1);
+    JacobianLocal[1][2] = -lambda;
+    JacobianLocal[1][3] = lambda;
+
+    JacobianLocal[2][0] = (-R - dR);
+    JacobianLocal[2][1] = -lambda;
+
+    JacobianLocal[3][0] = (R + dR);
+    JacobianLocal[3][1] = lambda;
+
+    return({axisLocal, JacobianLocal, F_Local, dim, localToGlobal});
+}
+
+/**
+ * Function for ArcRadius constraint. 
+ * This function fill local matrix J and vector F.
+ * 
+ * @param {Constraint} constraint 
+ * @returns {Object} Object with axis names, local Jacobian and local vector F
+ */
+function getDerivativeFunction_ArcRadius(constraint, unknowns, axisGlobal) {
+    const dim = 2;
+
+    const axisLocal = [];
+    axisLocal.push('lambda_' + constraint.id);
+    axisLocal.push('dR_' + constraint.elements[0].id + '_' + constraint.elements[0].type)
+
+    const localToGlobal = new Array(dim);
+    for (let i = 0; i < dim; i++) {
+        localToGlobal[i] = axisGlobal.indexOf(axisLocal[i]);
+    }
+
+    const JacobianLocal = new Array(dim);
+    const F_Local = new Array(dim);
+    for (let i = 0; i < dim; i++) {
+        F_Local[i] = 0;
+        JacobianLocal[i] = new Array(dim);
+        for (let j = 0; j < dim; j++) {
+            JacobianLocal[i][j] = 0;
+        }
+    }
+
+    const R = constraint.elements[0].R;
+    const Rad = constraint.value
+
+    const lambda = unknowns[localToGlobal[0]];
+    const dR = unknowns[localToGlobal[1]];
+    
+    F_Local[0] = R + dR - Rad;
+    F_Local[1] = lambda;
+
+    JacobianLocal[0][1] = 1;
+    JacobianLocal[1][0] = 1;
+
+    return({axisLocal, JacobianLocal, F_Local, dim, localToGlobal});
+}
+
+/**
+ * Function for ArcAngle constraint. 
+ * This function fill local matrix J and vector F.
+ * 
+ * @param {Constraint} constraint 
+ * @returns {Object} Object with axis names, local Jacobian and local vector F
+ */
+function getDerivativeFunction_ArcAngle(constraint, unknowns, axisGlobal) {
+    const dim = 3;
+
+    const axisLocal = [];
+    axisLocal.push('lambda_' + constraint.id);
+    axisLocal.push('dFi1_' + constraint.elements[0].id + '_' + constraint.elements[0].type)
+    axisLocal.push('dFi2_' + constraint.elements[0].id + '_' + constraint.elements[0].type)
+
+    const localToGlobal = new Array(dim);
+    for (let i = 0; i < dim; i++) {
+        localToGlobal[i] = axisGlobal.indexOf(axisLocal[i]);
+    }
+
+    const JacobianLocal = new Array(dim);
+    const F_Local = new Array(dim);
+    for (let i = 0; i < dim; i++) {
+        F_Local[i] = 0;
+        JacobianLocal[i] = new Array(dim);
+        for (let j = 0; j < dim; j++) {
+            JacobianLocal[i][j] = 0;
+        }
+    }
+
+    const arc = constraint.elements[0];
+
+    let fi1 = arc.fi1;
+    let fi2 = arc.fi2;
+    let angle = constraint.value
+    if (arc.angleMode && arc.angleMode == 'DEG') {
+        fi1 *= Math.PI / 180;
+        fi2 *= Math.PI / 180;
+        angle *= Math.PI / 180;
+    }
+
+
+    const lambda = unknowns[localToGlobal[0]];
+    const dFi1 = unknowns[localToGlobal[1]];
+    const dFi2 = unknowns[localToGlobal[2]];
+    
+    F_Local[0] = fi2 + dFi2 - fi1 - dFi1 - angle;
+    F_Local[1] = -lambda;
+    F_Local[2] = lambda;
+
+    JacobianLocal[0][1] = -1;
+    JacobianLocal[0][2] = 1;
+
+    JacobianLocal[1][0] = -1;
+
+    JacobianLocal[2][0] = 1;
+
+    return({axisLocal, JacobianLocal, F_Local, dim, localToGlobal});
+}
 
 export {
     getDerivativeFunction_Horizontal,
@@ -935,4 +1109,7 @@ export {
     getDerivativeFunction_PointOnLine,
     getDerivativeFunction_Angle,
     getDerivativeFunction_EqualLines,
+    getDerivativeFunction_ArcLength,
+    getDerivativeFunction_ArcRadius,
+    getDerivativeFunction_ArcAngle,
 };

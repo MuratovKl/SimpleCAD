@@ -1,10 +1,11 @@
 class Constraint {
   static curId = 0;
 
-  constructor({type, points, lines, value}) {
+  constructor({type, points, lines, value, elements}) {
     this._type = type;
     this._points = points;
     this._lines = lines;
+    this._elements = elements;
     this._value = value;
     this._id = Constraint.curId++;
   }
@@ -35,6 +36,14 @@ class Constraint {
 
   set lines(val) {
     this._lines = val;
+  }
+
+  get elements() {
+    return this._elements;
+  }
+
+  set elements(val) {
+    this._elements = val;
   }
 
   get id() {

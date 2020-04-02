@@ -1,4 +1,5 @@
 import { PointUsedInConstraints } from './PointUsedInConstraints.js';
+import { ElementUsedInConstraints } from './ElementUsedInConstraints.js';
 import { 
     getDerivativeFunction_Horizontal,
     getDerivativeFunction_Length,
@@ -10,6 +11,9 @@ import {
     getDerivativeFunction_PointOnLine,
     getDerivativeFunction_Angle,
     getDerivativeFunction_EqualLines,
+    getDerivativeFunction_ArcLength,
+    getDerivativeFunction_ArcRadius,
+    getDerivativeFunction_ArcAngle,
 } from './constraintFunctions.js';
 import { ConstraintsTypes } from '../ConstraintsTypes.js';
 
@@ -23,16 +27,20 @@ class Kernel {
      * 
      * @throws {Error} Will throw if System cannot be solved
      * @param {Array<Point>} points points which should be modified by constraints 
+     * @param {Array<Arc>} elements elements which should be modified by constraints.
+     *                              `points` array must contain points used by element.
      * @param {Array<Constraint>} constraints constraints
      */
-    solve(points, constraints) {
+    solve(points, elements, constraints) {
         if (constraints.length === 0) {
             return null;
         }
         const pointsUsedInConstraints = [];
         this._pointsUsedInConstraints(pointsUsedInConstraints, constraints);
+        const elementsUsedInConstraints = [];
+        this._elementsUsedInConstraints(elementsUsedInConstraints, constraints);
         const axisGlobal = [];
-        this._fillAxisGlobalArray(axisGlobal, pointsUsedInConstraints, constraints);
+        this._fillAxisGlobalArray(axisGlobal, pointsUsedInConstraints, elementsUsedInConstraints, constraints);
 
         let deltas
         try {
@@ -41,16 +49,17 @@ class Kernel {
             throw e;
         }
 
-        this._assignDeltasToPoints(deltas, points, axisGlobal);
+        this._assignDeltasToPointsAndElems(deltas, points, elements, axisGlobal);
 
         return { status: "OK" };
     }
 
-    _assignDeltasToPoints(deltas, points, axisGlobal) {
+    _assignDeltasToPointsAndElems(deltas, points, elements, axisGlobal) {
         let name;
         let idStr;
+        let type;
         for (let i = 0; i < axisGlobal.length; i++) {
-            [name, idStr] = axisGlobal[i].split('_'); // dx_1 etc.
+            [name, idStr, type] = axisGlobal[i].split('_'); // dx_1, dFi1_2_ARC etc.
             if (!isNaN(idStr) && name) {
                 let idx;
                 switch (name) {
@@ -70,6 +79,41 @@ class Kernel {
                             });
                         if (idx != -1) {
                             points[idx].y += deltas[i];
+                        }
+                        break;
+                    case 'dR':
+                        idx = elements.findIndex(elem => {
+                            let id = Number.parseInt(idStr);
+                            return (elem.id === id) && (elem.type === type);
+                        })
+                        if (idx != -1) {
+                            elements[idx].R += deltas[i]
+                        }
+                        break;
+                    case 'dFi1':
+                        idx = elements.findIndex(elem => {
+                            let id = Number.parseInt(idStr);
+                            return (elem.id === id) && (elem.type === type);
+                        })
+                        if (idx != -1) {
+                            let deltaFi = deltas[i];
+                            if (elements[idx].angleMode == 'DEG') {
+                                deltaFi = deltaFi * 180 / Math.PI;
+                            }
+                            elements[idx].fi1 += deltaFi;
+                        }
+                        break;
+                    case 'dFi2':
+                        idx = elements.findIndex(elem => {
+                            let id = Number.parseInt(idStr);
+                            return (elem.id === id) && (elem.type === type);
+                        })
+                        if (idx != -1) {
+                            let deltaFi = deltas[i];
+                            if (elements[idx].angleMode == 'DEG') {
+                                deltaFi = deltaFi * 180 / Math.PI;
+                            }
+                            elements[idx].fi2 += deltaFi;
                         }
                         break;
 
@@ -248,6 +292,15 @@ class Kernel {
                 case ConstraintsTypes.EQUAL_LINES:
                     constraintFunction = getDerivativeFunction_EqualLines(constraint, unknowns, globalAxis);
                     break;
+                case ConstraintsTypes.ARC_LENGTH:
+                    constraintFunction = getDerivativeFunction_ArcLength(constraint, unknowns, globalAxis);
+                    break;
+                case ConstraintsTypes.ARC_RADIUS:
+                    constraintFunction = getDerivativeFunction_ArcRadius(constraint, unknowns, globalAxis);
+                    break;
+                case ConstraintsTypes.ARC_ANGLE:
+                    constraintFunction = getDerivativeFunction_ArcAngle(constraint, unknowns, globalAxis);
+                    break;
 
                 default:
                     break;
@@ -309,7 +362,7 @@ class Kernel {
      * @param {Array<{String, bool, bool}>} pointsUsedInConstraints 
      * @param {Array<Constraint>} constraints 
      */
-    _fillAxisGlobalArray(axisGlobal, pointsUsedInConstraints, constraints) {
+    _fillAxisGlobalArray(axisGlobal, pointsUsedInConstraints, elementsUsedInConstraints, constraints) {
         for (let constraint of constraints) {
             switch (constraint.type) {
                 case ConstraintsTypes.FIX_POINT:
@@ -333,8 +386,54 @@ class Kernel {
                 axisGlobal.push('dy_' + point.id);
             }
         }
+        for (let element of elementsUsedInConstraints) {
+            if (element.dR) {
+                axisGlobal.push('dR_' + element.id + '_' + element.type);
+            }
+            if (element.dFi1) {
+                axisGlobal.push('dFi1_' + element.id + '_' + element.type);
+            }
+            if (element.dFi2) {
+                axisGlobal.push('dFi2_' + element.id + '_' + element.type);
+            }
+        }
     }
 
+    /**
+     * defining elements that are in constraints
+     * 
+     * @param {Array<{String, bool, bool}>} elementsUsedInConstraints
+     * @param {Array<Constraint>} constraints 
+     */
+    _elementsUsedInConstraints(elementsUsedInConstraints, constraints) {
+        for (let constraint of constraints) {
+            const elementsInConstraint = constraint.elements;
+            if (elementsInConstraint) {
+                for (let element of elementsInConstraint) {
+                    let elementUsedInConstraints = elementsUsedInConstraints.find(elem => (elem.id == element.id) && (elem.type == element.type));
+                    if (!elementUsedInConstraints) {
+                        elementUsedInConstraints = new ElementUsedInConstraints(element.type, element.id);
+                        elementsUsedInConstraints.push(elementUsedInConstraints);
+                    }
+                    switch (constraint.type) {
+                        case ConstraintsTypes.ARC_LENGTH:
+                            elementUsedInConstraints.dFi1 = true;
+                            elementUsedInConstraints.dFi2 = true;
+                            elementUsedInConstraints.dR = true;
+                            break;
+                        case ConstraintsTypes.ARC_RADIUS:
+                            elementUsedInConstraints.dR = true;
+                            break;
+                        case ConstraintsTypes.ARC_ANGLE:
+                            elementUsedInConstraints.dFi1 = true;
+                            elementUsedInConstraints.dFi2 = true;
+                            break;
+                    }
+                }
+            }
+        }
+    }
+    
     /**
      * defining points that are in constraints
      * 

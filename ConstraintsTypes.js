@@ -9,4 +9,7 @@ export const ConstraintsTypes = {
   'POINT_ON_LINE':'POINT_ON_LINE',
   'ANGLE':'ANGLE',
   'EQUAL_LINES': 'EQUAL_LINES',
+  'ARC_LENGTH': 'ARC_LENGTH',
+  'ARC_RADIUS': 'ARC_RADIUS',
+  'ARC_ANGLE': 'ARC_ANGLE',
 };
