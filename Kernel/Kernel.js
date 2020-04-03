@@ -14,6 +14,7 @@ import {
     getDerivativeFunction_ArcLength,
     getDerivativeFunction_ArcRadius,
     getDerivativeFunction_ArcAngle,
+    getDerivativeFunction_ArcTangentToArc,
 } from './constraintFunctions.js';
 import { ConstraintsTypes } from '../ConstraintsTypes.js';
 
@@ -38,7 +39,7 @@ class Kernel {
         const pointsUsedInConstraints = [];
         this._pointsUsedInConstraints(pointsUsedInConstraints, constraints);
         const elementsUsedInConstraints = [];
-        this._elementsUsedInConstraints(elementsUsedInConstraints, constraints);
+        this._elementsUsedInConstraints(elementsUsedInConstraints, pointsUsedInConstraints, constraints);
         const axisGlobal = [];
         this._fillAxisGlobalArray(axisGlobal, pointsUsedInConstraints, elementsUsedInConstraints, constraints);
 
@@ -301,6 +302,9 @@ class Kernel {
                 case ConstraintsTypes.ARC_ANGLE:
                     constraintFunction = getDerivativeFunction_ArcAngle(constraint, unknowns, globalAxis);
                     break;
+                case ConstraintsTypes.ARC_TANGENT_ToArc:
+                    constraintFunction = getDerivativeFunction_ArcTangentToArc(constraint, unknowns, globalAxis);
+                    break;
 
                 default:
                     break;
@@ -405,7 +409,7 @@ class Kernel {
      * @param {Array<{String, bool, bool}>} elementsUsedInConstraints
      * @param {Array<Constraint>} constraints 
      */
-    _elementsUsedInConstraints(elementsUsedInConstraints, constraints) {
+    _elementsUsedInConstraints(elementsUsedInConstraints, pointsUsedInConstraints, constraints) {
         for (let constraint of constraints) {
             const elementsInConstraint = constraint.elements;
             if (elementsInConstraint) {
@@ -427,6 +431,31 @@ class Kernel {
                         case ConstraintsTypes.ARC_ANGLE:
                             elementUsedInConstraints.dFi1 = true;
                             elementUsedInConstraints.dFi2 = true;
+                            break;
+                        case ConstraintsTypes.ARC_TANGENT_ToArc:
+                            elementUsedInConstraints.dR = true;
+                            break;
+                    }
+                }
+
+                // add dx_i and dy_i to axisGlobal
+                const pointsInConstraint = [];
+                switch (constraint.type) {
+                    case ConstraintsTypes.ARC_TANGENT_ToArc:
+                        pointsInConstraint.push(constraint.elements[0].center);
+                        pointsInConstraint.push(constraint.elements[1].center);
+                        break;
+                }
+                for (let point of pointsInConstraint) {
+                    let pointUsedInConstraints = pointsUsedInConstraints.find(elem => elem.id == point.id);
+                    if (!pointUsedInConstraints) {
+                        pointUsedInConstraints = new PointUsedInConstraints(point.id);
+                        pointsUsedInConstraints.push(pointUsedInConstraints);
+                    }
+                    switch (constraint.type) {
+                        case ConstraintsTypes.ARC_TANGENT_ToArc:
+                            pointUsedInConstraints.dx = true;
+                            pointUsedInConstraints.dy = true;
                             break;
                     }
                 }

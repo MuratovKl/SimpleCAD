@@ -16,6 +16,7 @@
 |ARC_LENGTH  | Длина дуги
 |ARC_RADIUS  | Радиус дуги
 |ARC_ANGLE   | Угол дуги
+|ARC_TANGENT_ToArc| Касание дуг окружностей (внешнее(OUT) и внутреннее(IN))
 
 Example:
 ```javascript
@@ -37,6 +38,7 @@ Example:
     Constraint({type: ConstraintsTypes.ARC_LENGTH, elements: [arc1], value: 20});
     Constraint({type: ConstraintsTypes.ARC_RADIUS, elements: [arc1], value: 5});
     Constraint({type: ConstraintsTypes.ARC_ANGLE, elements: [arc1], value: 45});
+    Constraint({type: ConstraintsTypes.ARC_TANGENT_ToArc, elements:[arc1, arc2], mode: 'IN'}); // mode: 'IN' | 'OUT'
 ```
 
 

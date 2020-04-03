@@ -1098,6 +1098,112 @@ function getDerivativeFunction_ArcAngle(constraint, unknowns, axisGlobal) {
     return({axisLocal, JacobianLocal, F_Local, dim, localToGlobal});
 }
 
+
+/**
+ * Function for ArcTangentToArc constraint. 
+ * This function fill local matrix J and vector F.
+ * 
+ * @param {Constraint} constraint 
+ * @returns {Object} Object with axis names, local Jacobian and local vector F
+ */
+function getDerivativeFunction_ArcTangentToArc(constraint, unknowns, axisGlobal) {
+    const dim = 7;
+
+    const axisLocal = [];
+    axisLocal.push('lambda_' + constraint.id);
+    for (let i = 0; i < 2; i++) {
+        axisLocal.push('dx_' + constraint.elements[i].center.id);
+        axisLocal.push('dy_' + constraint.elements[i].center.id);
+        axisLocal.push('dR_' + constraint.elements[i].id + '_' + constraint.elements[i].type)
+    }
+
+    const localToGlobal = new Array(dim);
+    for (let i = 0; i < dim; i++) {
+        localToGlobal[i] = axisGlobal.indexOf(axisLocal[i]);
+    }
+
+    const JacobianLocal = new Array(dim);
+    const F_Local = new Array(dim);
+    for (let i = 0; i < dim; i++) {
+        F_Local[i] = 0;
+        JacobianLocal[i] = new Array(dim);
+        for (let j = 0; j < dim; j++) {
+            JacobianLocal[i][j] = 0;
+        }
+    }
+
+    const arc1 = constraint.elements[0];
+    const arc2 = constraint.elements[1];
+    const modeSign = (constraint.mode === 'IN') ? -1 : 1;
+
+    const x1 = arc1.center.x;
+    const y1 = arc1.center.y;
+    const r1 = arc1.R;
+    const x2 = arc2.center.x;
+    const y2 = arc2.center.y;
+    const r2 = arc2.R;
+
+    const lambda = unknowns[localToGlobal[0]];
+    const dx1 = unknowns[localToGlobal[1]];
+    const dy1 = unknowns[localToGlobal[2]];
+    const dr1 = unknowns[localToGlobal[3]];
+    const dx2 = unknowns[localToGlobal[4]];
+    const dy2 = unknowns[localToGlobal[5]];
+    const dr2 = unknowns[localToGlobal[6]];
+
+    const dX = x2 + dx2 - x1 - dx1;
+    const dY = y2 + dy2 - y1 - dy1;
+    const dR = r2 + dr2 + modeSign * (r1 + dr1);
+
+    const a_ = -2 * dX;
+    const b_ = -2 * dY;
+    const c_ = -2 * modeSign * dR;
+    const d_ = 2 * dX;
+    const e_ = 2 * dY;
+    const f_ = -2 * dR;
+
+    F_Local[0] = dX * dX + dY * dY - dR * dR;
+    F_Local[1] = lambda * a_;
+    F_Local[2] = lambda * b_;
+    F_Local[3] = lambda * c_;
+    F_Local[4] = lambda * d_;
+    F_Local[5] = lambda * e_;
+    F_Local[6] = lambda * f_;
+
+    JacobianLocal[0][1] = a_;
+    JacobianLocal[0][2] = b_;
+    JacobianLocal[0][3] = c_;
+    JacobianLocal[0][4] = d_;
+    JacobianLocal[0][5] = e_;
+    JacobianLocal[0][6] = f_;
+
+    JacobianLocal[1][0] = a_;
+    JacobianLocal[1][1] = 2 * lambda;
+    JacobianLocal[1][3] = -2 * lambda;
+    
+    JacobianLocal[2][0] = b_;
+    JacobianLocal[2][2] = 2 * lambda;
+    JacobianLocal[2][4] = -2 * lambda;
+
+    JacobianLocal[3][0] = c_;
+    JacobianLocal[3][5] = -2 * lambda;
+    JacobianLocal[3][6] = -2 * modeSign * lambda;
+    
+    JacobianLocal[4][0] = d_;
+    JacobianLocal[4][1] = -2 * lambda;
+    JacobianLocal[4][3] = 2 * lambda;
+    
+    JacobianLocal[5][0] = e_;
+    JacobianLocal[5][2] = -2 * lambda;
+    JacobianLocal[5][4] = 2 * lambda;
+    
+    JacobianLocal[6][0] = f_;
+    JacobianLocal[6][5] = -2 * modeSign * lambda;
+    JacobianLocal[6][6] = -2 * lambda;
+
+    return({axisLocal, JacobianLocal, F_Local, dim, localToGlobal});
+}
+
 export {
     getDerivativeFunction_Horizontal,
     getDerivativeFunction_Length,
@@ -1112,4 +1218,5 @@ export {
     getDerivativeFunction_ArcLength,
     getDerivativeFunction_ArcRadius,
     getDerivativeFunction_ArcAngle,
+    getDerivativeFunction_ArcTangentToArc,
 };

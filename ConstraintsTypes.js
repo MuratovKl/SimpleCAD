@@ -12,4 +12,5 @@ export const ConstraintsTypes = {
   'ARC_LENGTH': 'ARC_LENGTH',
   'ARC_RADIUS': 'ARC_RADIUS',
   'ARC_ANGLE': 'ARC_ANGLE',
+  'ARC_TANGENT_ToArc': 'ARC_TANGENT_ToArc',
 };
