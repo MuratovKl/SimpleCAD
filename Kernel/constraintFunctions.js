@@ -1204,6 +1204,262 @@ function getDerivativeFunction_ArcTangentToArc(constraint, unknowns, axisGlobal)
     return({axisLocal, JacobianLocal, F_Local, dim, localToGlobal});
 }
 
+/**
+ * Function for ArcTangentToLine constraint. 
+ * This function fill local matrix J and vector F.
+ * 
+ * @param {Constraint} constraint 
+ * @returns {Object} Object with axis names, local Jacobian and local vector F
+ */
+function getDerivativeFunction_ArcTangentToLine(constraint, unknowns, axisGlobal) {
+    const dim = 8;
+
+    const axisLocal = [];
+    axisLocal.push('lambda_' + constraint.id);
+    axisLocal.push('dx_' + constraint.lines[0][0].id);
+    axisLocal.push('dy_' + constraint.lines[0][0].id);
+    axisLocal.push('dx_' + constraint.lines[0][1].id);
+    axisLocal.push('dy_' + constraint.lines[0][1].id);
+    axisLocal.push('dx_' + constraint.elements[0].center.id);
+    axisLocal.push('dy_' + constraint.elements[0].center.id);
+    axisLocal.push('dR_' + constraint.elements[0].id + '_' + constraint.elements[0].type)
+
+    const localToGlobal = new Array(dim);
+    for (let i = 0; i < dim; i++) {
+        localToGlobal[i] = axisGlobal.indexOf(axisLocal[i]);
+    }
+
+    const JacobianLocal = new Array(dim);
+    const F_Local = new Array(dim);
+    for (let i = 0; i < dim; i++) {
+        F_Local[i] = 0;
+        JacobianLocal[i] = new Array(dim);
+        for (let j = 0; j < dim; j++) {
+            JacobianLocal[i][j] = 0;
+        }
+    }
+
+    const arc = constraint.elements[0];
+    const line = constraint.lines[0];
+
+    const x0 = arc.center.x;
+    const y0 = arc.center.y;
+    const r0 = arc.R;
+    const x1 = line[0].x;
+    const y1 = line[0].y;
+    const x2 = line[1].x;
+    const y2 = line[1].y
+
+    const lambda = unknowns[localToGlobal[0]];
+    const dx1 = unknowns[localToGlobal[1]];
+    const dy1 = unknowns[localToGlobal[2]];
+    const dx2 = unknowns[localToGlobal[3]];
+    const dy2 = unknowns[localToGlobal[4]];
+    const dx0 = unknowns[localToGlobal[5]];
+    const dy0 = unknowns[localToGlobal[6]];
+    const dr0 = unknowns[localToGlobal[7]];
+
+    const x1x2 = x1 + dx1 - x2 - dx2;
+    const y1y2 = y1 + dy1 - y2 - dy2;
+    const y2y1 = y2 + dy2 - y1 - dy1;
+    const sqrtXY = Math.sqrt(x1x2 * x1x2 + y1y2 * y1y2);
+    const xy_32 = Math.pow(sqrtXY, 3);
+    const q1 = (-1/xy_32);
+
+    const a_ = (y0 + dy0) - (y2 + dy2) - (r0 + dr0) * x1x2 / sqrtXY;
+    const b_ = -(x0 + dx0) + (x2 + dx2) - (r0 + dr0) * y1y2 / sqrtXY;
+    const c_ = -(y0 + dy0) + (y1 + dy1) + (r0 + dr0) * x1x2 / sqrtXY;
+    const d_ = (x0 + dx0) - (x1 + dx1) + (r0 + dr0) * y1y2 / sqrtXY;
+    const e_ = y2y1;
+    const f_ = x1x2;
+    const g_ = -sqrtXY;
+
+    F_Local[0] = y2y1 * (x0 + dx0) + x1x2 * (y0 + dy0) + ((x2 + dx2)*(y1 + dy1) - (x1 + dx1)*(y2 + dy2)) - (r0 + dr0) * sqrtXY;
+    F_Local[1] = lambda * a_;
+    F_Local[2] = lambda * b_;
+    F_Local[3] = lambda * c_;
+    F_Local[4] = lambda * d_;
+    F_Local[5] = lambda * e_;
+    F_Local[6] = lambda * f_;
+
+    JacobianLocal[0][1] = a_;
+    JacobianLocal[0][2] = b_;
+    JacobianLocal[0][3] = c_;
+    JacobianLocal[0][4] = d_;
+    JacobianLocal[0][5] = e_;
+    JacobianLocal[0][6] = f_;
+    JacobianLocal[0][7] = g_;
+
+    JacobianLocal[1][0] = a_;
+    JacobianLocal[1][1] = lambda * (-(r0+dr0)*(q1*x1x2*x1x2 + 1/sqrtXY));
+    JacobianLocal[1][2] = lambda * (-(r0+dr0)*(q1 * y1y2 * x1x2));
+    JacobianLocal[1][3] = lambda * (-(r0+dr0)*(q1 * x1x2 * -1 * x1x2 - 1/sqrtXY));
+    JacobianLocal[1][4] = lambda * (-1 -(r0+dr0)*(q1 * y1y2 * -1 * x1x2));
+    JacobianLocal[1][6] = lambda;
+    JacobianLocal[1][7] = lambda * (-y1y2/sqrtXY);
+    
+    JacobianLocal[2][0] = b_;
+    JacobianLocal[2][1] = lambda * (-(r0+dr0)*(q1*x1x2*y1y2));
+    JacobianLocal[2][2] = lambda * (-(r0+dr0) * (q1 * y1y2*y1y2) + 1/sqrtXY);
+    JacobianLocal[2][3] = lambda * (1 - (r0+dr0)*(q1*x1x2 * -1 * y1y2));
+    JacobianLocal[2][4] = lambda * (-(r0+dr0)*(q1*y1y2 * -1 * y1y2-+ 1/sqrtXY));
+    JacobianLocal[2][5] = -lambda;
+    JacobianLocal[2][7] = lambda * (-y1y2/sqrtXY);
+
+    JacobianLocal[3][0] = c_;
+    JacobianLocal[3][1] = lambda * ((r0+dr0) * (q1 * x1x2*x1x2 + 1/sqrtXY));
+    JacobianLocal[3][2] = lambda * (1 + (r0+dr0) * (q1 * y1y2*x1x2));
+    JacobianLocal[3][3] = lambda * ((r0+dr0) * (q1 * x1x2 * -1 * x1x2 -1/sqrtXY));
+    JacobianLocal[3][4] = lambda * ((r0+dr0) * (q1 * y1y2 * -1 * x1x2));
+    JacobianLocal[3][6] = -lambda;
+    JacobianLocal[3][7] = lambda * (x1x2/sqrtXY);
+    
+    JacobianLocal[4][0] = d_;
+    JacobianLocal[4][1] = lambda * (-1 + (r0+dr0)*(q1*x1x2*y1y2));
+    JacobianLocal[4][2] = lambda * ((r0+dr0)*(q1*y1y2*y1y2 + 1/sqrtXY));
+    JacobianLocal[4][3] = lambda * ((r0+dr0)*(x1x2 * -1 * y1y2));
+    JacobianLocal[4][4] = lambda * ((r0+dr0)*(q1*y1y2 * -1 * y1y2 - 1/sqrtXY));
+    JacobianLocal[4][5] = lambda;
+    JacobianLocal[4][7] = lambda * (y1y2/sqrtXY);
+    
+    JacobianLocal[5][0] = e_;
+    JacobianLocal[5][2] = -lambda;
+    JacobianLocal[5][4] = lambda;
+    
+    JacobianLocal[6][0] = f_;
+    JacobianLocal[6][1] = lambda;
+    JacobianLocal[6][3] = -lambda;
+    
+    JacobianLocal[7][0] = g_;
+    JacobianLocal[7][1] = lambda * (-x1x2/sqrtXY);
+    JacobianLocal[7][2] = lambda * (-y1y2/sqrtXY);
+    JacobianLocal[7][3] = lambda * (x1x2/sqrtXY);
+    JacobianLocal[7][4] = lambda * (y1y2/sqrtXY);
+
+    return({axisLocal, JacobianLocal, F_Local, dim, localToGlobal});
+}
+
+/**
+ * Function for DistancePointLine constraint. 
+ * This function fill local matrix J and vector F.
+ * 
+ * @param {Constraint} constraint 
+ * @returns {Object} Object with axis names, local Jacobian and local vector F
+ */
+function getDerivativeFunction_DistancePointLine(constraint, unknowns, axisGlobal) {
+    const dim = 7;
+
+    const axisLocal = [];
+    axisLocal.push('lambda_' + constraint.id);
+    axisLocal.push('dx_' + constraint.lines[0][0].id);
+    axisLocal.push('dy_' + constraint.lines[0][0].id);
+    axisLocal.push('dx_' + constraint.lines[0][1].id);
+    axisLocal.push('dy_' + constraint.lines[0][1].id);
+    axisLocal.push('dx_' + constraint.points[0].id);
+    axisLocal.push('dy_' + constraint.points[0].id);
+
+    const localToGlobal = new Array(dim);
+    for (let i = 0; i < dim; i++) {
+        localToGlobal[i] = axisGlobal.indexOf(axisLocal[i]);
+    }
+
+    const JacobianLocal = new Array(dim);
+    const F_Local = new Array(dim);
+    for (let i = 0; i < dim; i++) {
+        F_Local[i] = 0;
+        JacobianLocal[i] = new Array(dim);
+        for (let j = 0; j < dim; j++) {
+            JacobianLocal[i][j] = 0;
+        }
+    }
+
+    const point = constraint.points[0];
+    const line = constraint.lines[0];
+    const L = constraint.value;
+
+    const x0 = point.x;
+    const y0 = point.y;
+    const x1 = line[0].x;
+    const y1 = line[0].y;
+    const x2 = line[1].x;
+    const y2 = line[1].y
+
+    const lambda = unknowns[localToGlobal[0]];
+    const dx1 = unknowns[localToGlobal[1]];
+    const dy1 = unknowns[localToGlobal[2]];
+    const dx2 = unknowns[localToGlobal[3]];
+    const dy2 = unknowns[localToGlobal[4]];
+    const dx0 = unknowns[localToGlobal[5]];
+    const dy0 = unknowns[localToGlobal[6]];
+
+    const x1x2 = x1 + dx1 - x2 - dx2;
+    const y1y2 = y1 + dy1 - y2 - dy2;
+    const y2y1 = y2 + dy2 - y1 - dy1;
+    const sqrtXY = Math.sqrt(x1x2 * x1x2 + y1y2 * y1y2);
+    const xy_32 = Math.pow(sqrtXY, 3);
+    const q1 = (-1/xy_32);
+
+    const a_ = (y0 + dy0) - (y2 + dy2) - L * x1x2 / sqrtXY;
+    const b_ = -(x0 + dx0) + (x2 + dx2) - L * y1y2 / sqrtXY;
+    const c_ = -(y0 + dy0) + (y1 + dy1) + L * x1x2 / sqrtXY;
+    const d_ = (x0 + dx0) - (x1 + dx1) + L * y1y2 / sqrtXY;
+    const e_ = y2y1;
+    const f_ = x1x2;
+
+    F_Local[0] = y2y1 * (x0 + dx0) + x1x2 * (y0 + dy0) + ((x2 + dx2)*(y1 + dy1) - (x1 + dx1)*(y2 + dy2)) - L * sqrtXY;
+    F_Local[1] = lambda * a_;
+    F_Local[2] = lambda * b_;
+    F_Local[3] = lambda * c_;
+    F_Local[4] = lambda * d_;
+    F_Local[5] = lambda * e_;
+    F_Local[6] = lambda * f_;
+
+    JacobianLocal[0][1] = a_;
+    JacobianLocal[0][2] = b_;
+    JacobianLocal[0][3] = c_;
+    JacobianLocal[0][4] = d_;
+    JacobianLocal[0][5] = e_;
+    JacobianLocal[0][6] = f_;
+
+    JacobianLocal[1][0] = a_;
+    JacobianLocal[1][1] = lambda * (-L*(q1*x1x2*x1x2 + 1/sqrtXY));
+    JacobianLocal[1][2] = lambda * (-L*(q1 * y1y2 * x1x2));
+    JacobianLocal[1][3] = lambda * (-L*(q1 * x1x2 * -1 * x1x2 - 1/sqrtXY));
+    JacobianLocal[1][4] = lambda * (-1 -L*(q1 * y1y2 * -1 * x1x2));
+    JacobianLocal[1][6] = lambda;
+    
+    JacobianLocal[2][0] = b_;
+    JacobianLocal[2][1] = lambda * (-L*(q1*x1x2*y1y2));
+    JacobianLocal[2][2] = lambda * (-L * (q1 * y1y2*y1y2) + 1/sqrtXY);
+    JacobianLocal[2][3] = lambda * (1 - L*(q1*x1x2 * -1 * y1y2));
+    JacobianLocal[2][4] = lambda * (-L*(q1*y1y2 * -1 * y1y2-+ 1/sqrtXY));
+    JacobianLocal[2][5] = -lambda;
+
+    JacobianLocal[3][0] = c_;
+    JacobianLocal[3][1] = lambda * (L * (q1 * x1x2*x1x2 + 1/sqrtXY));
+    JacobianLocal[3][2] = lambda * (1 + L * (q1 * y1y2*x1x2));
+    JacobianLocal[3][3] = lambda * (L * (q1 * x1x2 * -1 * x1x2 -1/sqrtXY));
+    JacobianLocal[3][4] = lambda * (L * (q1 * y1y2 * -1 * x1x2));
+    JacobianLocal[3][6] = -lambda;
+    
+    JacobianLocal[4][0] = d_;
+    JacobianLocal[4][1] = lambda * (-1 + L*(q1*x1x2*y1y2));
+    JacobianLocal[4][2] = lambda * (L*(q1*y1y2*y1y2 + 1/sqrtXY));
+    JacobianLocal[4][3] = lambda * (L*(x1x2 * -1 * y1y2));
+    JacobianLocal[4][4] = lambda * (L*(q1*y1y2 * -1 * y1y2 - 1/sqrtXY));
+    JacobianLocal[4][5] = lambda;
+    
+    JacobianLocal[5][0] = e_;
+    JacobianLocal[5][2] = -lambda;
+    JacobianLocal[5][4] = lambda;
+    
+    JacobianLocal[6][0] = f_;
+    JacobianLocal[6][1] = lambda;
+    JacobianLocal[6][3] = -lambda;
+
+    return({axisLocal, JacobianLocal, F_Local, dim, localToGlobal});
+}
+
 export {
     getDerivativeFunction_Horizontal,
     getDerivativeFunction_Length,
@@ -1215,8 +1471,10 @@ export {
     getDerivativeFunction_PointOnLine,
     getDerivativeFunction_Angle,
     getDerivativeFunction_EqualLines,
+    getDerivativeFunction_DistancePointLine,
     getDerivativeFunction_ArcLength,
     getDerivativeFunction_ArcRadius,
     getDerivativeFunction_ArcAngle,
     getDerivativeFunction_ArcTangentToArc,
+    getDerivativeFunction_ArcTangentToLine,
 };

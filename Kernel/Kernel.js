@@ -11,10 +11,12 @@ import {
     getDerivativeFunction_PointOnLine,
     getDerivativeFunction_Angle,
     getDerivativeFunction_EqualLines,
+    getDerivativeFunction_DistancePointLine,
     getDerivativeFunction_ArcLength,
     getDerivativeFunction_ArcRadius,
     getDerivativeFunction_ArcAngle,
     getDerivativeFunction_ArcTangentToArc,
+    getDerivativeFunction_ArcTangentToLine,
 } from './constraintFunctions.js';
 import { ConstraintsTypes } from '../ConstraintsTypes.js';
 
@@ -293,6 +295,9 @@ class Kernel {
                 case ConstraintsTypes.EQUAL_LINES:
                     constraintFunction = getDerivativeFunction_EqualLines(constraint, unknowns, globalAxis);
                     break;
+                case ConstraintsTypes.DISTANCE_POINT_LINE:
+                    constraintFunction = getDerivativeFunction_DistancePointLine(constraint, unknowns, globalAxis);
+                    break;
                 case ConstraintsTypes.ARC_LENGTH:
                     constraintFunction = getDerivativeFunction_ArcLength(constraint, unknowns, globalAxis);
                     break;
@@ -304,6 +309,9 @@ class Kernel {
                     break;
                 case ConstraintsTypes.ARC_TANGENT_ToArc:
                     constraintFunction = getDerivativeFunction_ArcTangentToArc(constraint, unknowns, globalAxis);
+                    break;
+                case ConstraintsTypes.ARC_TANGENT_ToLine:
+                    constraintFunction = getDerivativeFunction_ArcTangentToLine(constraint, unknowns, globalAxis);
                     break;
 
                 default:
@@ -434,6 +442,8 @@ class Kernel {
                             break;
                         case ConstraintsTypes.ARC_TANGENT_ToArc:
                             elementUsedInConstraints.dR = true;
+                        case ConstraintsTypes.ARC_TANGENT_ToLine:
+                            elementUsedInConstraints.dR = true;
                             break;
                     }
                 }
@@ -445,6 +455,9 @@ class Kernel {
                         pointsInConstraint.push(constraint.elements[0].center);
                         pointsInConstraint.push(constraint.elements[1].center);
                         break;
+                    case ConstraintsTypes.ARC_TANGENT_ToLine:
+                        pointsInConstraint.push(constraint.elements[0].center);
+                        break;
                 }
                 for (let point of pointsInConstraint) {
                     let pointUsedInConstraints = pointsUsedInConstraints.find(elem => elem.id == point.id);
@@ -454,6 +467,10 @@ class Kernel {
                     }
                     switch (constraint.type) {
                         case ConstraintsTypes.ARC_TANGENT_ToArc:
+                            pointUsedInConstraints.dx = true;
+                            pointUsedInConstraints.dy = true;
+                            break;
+                        case ConstraintsTypes.ARC_TANGENT_ToLine:
                             pointUsedInConstraints.dx = true;
                             pointUsedInConstraints.dy = true;
                             break;
@@ -502,6 +519,14 @@ class Kernel {
                                 pointUsedInConstraints.dx = true;
                                 pointUsedInConstraints.dy = true;
                                 break;
+                            case ConstraintsTypes.ARC_TANGENT_ToLine:
+                                pointUsedInConstraints.dx = true;
+                                pointUsedInConstraints.dy = true;
+                                break;
+                            case ConstraintsTypes.DISTANCE_POINT_LINE:
+                                pointUsedInConstraints.dx = true;
+                                pointUsedInConstraints.dy = true;
+                                break;
                         }
                     }
                 }
@@ -533,6 +558,10 @@ class Kernel {
                             pointUsedInConstraints.dy = true;
                             break;
                         case ConstraintsTypes.POINT_ON_LINE:
+                            pointUsedInConstraints.dx = true;
+                            pointUsedInConstraints.dy = true;
+                            break;
+                        case ConstraintsTypes.DISTANCE_POINT_LINE:
                             pointUsedInConstraints.dx = true;
                             pointUsedInConstraints.dy = true;
                             break;
