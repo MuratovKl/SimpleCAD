@@ -1262,19 +1262,26 @@ function getDerivativeFunction_ArcTangentToLine(constraint, unknowns, axisGlobal
     const x1x2 = x1 + dx1 - x2 - dx2;
     const y1y2 = y1 + dy1 - y2 - dy2;
     const y2y1 = y2 + dy2 - y1 - dy1;
-    const sqrtXY = Math.sqrt(x1x2 * x1x2 + y1y2 * y1y2);
-    const xy_32 = Math.pow(sqrtXY, 3);
-    const q1 = (-1/xy_32);
+    const xy_ = (x1x2 * x1x2 + y1y2 * y1y2)
+    const sqrtXY = Math.sqrt(xy_);
+    const xy_32 = Math.pow(xy_, 1.5);
+    
+    const q2 = y2y1*(x0+dx0) + x1x2*(y0+dy0) + (x2+dx2)*(y1+dy1) - (x1+dx1)*(y2+dy2);
+    let signum = 0;
+    if (q2 !== 0) {
+        signum = q2/Math.abs(q2);
+    }
 
-    const a_ = (y0 + dy0) - (y2 + dy2) - (r0 + dr0) * x1x2 / sqrtXY;
-    const b_ = -(x0 + dx0) + (x2 + dx2) - (r0 + dr0) * y1y2 / sqrtXY;
-    const c_ = -(y0 + dy0) + (y1 + dy1) + (r0 + dr0) * x1x2 / sqrtXY;
-    const d_ = (x0 + dx0) - (x1 + dx1) + (r0 + dr0) * y1y2 / sqrtXY;
-    const e_ = y2y1;
-    const f_ = x1x2;
+    const a_ = ((y0 + dy0) - (y2 + dy2))*signum - (r0 + dr0) * x1x2 / sqrtXY;
+    const b_ = (-(x0 + dx0) + (x2 + dx2))*signum - (r0 + dr0) * y1y2 / sqrtXY;
+    const c_ = (-(y0 + dy0) + (y1 + dy1))*signum + (r0 + dr0) * x1x2 / sqrtXY;
+    const d_ = ((x0 + dx0) - (x1 + dx1))*signum + (r0 + dr0) * y1y2 / sqrtXY;
+    const e_ = y2y1*signum;
+    const f_ = x1x2*signum;
     const g_ = -sqrtXY;
+    const rdr = r0+dr0;
 
-    F_Local[0] = y2y1 * (x0 + dx0) + x1x2 * (y0 + dy0) + ((x2 + dx2)*(y1 + dy1) - (x1 + dx1)*(y2 + dy2)) - (r0 + dr0) * sqrtXY;
+    F_Local[0] = Math.abs(y2y1 * (x0 + dx0) + x1x2 * (y0 + dy0) + ((x2 + dx2)*(y1 + dy1) - (x1 + dx1)*(y2 + dy2))) - (r0 + dr0) * sqrtXY;
     F_Local[1] = lambda * a_;
     F_Local[2] = lambda * b_;
     F_Local[3] = lambda * c_;
@@ -1291,44 +1298,44 @@ function getDerivativeFunction_ArcTangentToLine(constraint, unknowns, axisGlobal
     JacobianLocal[0][7] = g_;
 
     JacobianLocal[1][0] = a_;
-    JacobianLocal[1][1] = lambda * (-(r0+dr0)*(q1*x1x2*x1x2 + 1/sqrtXY));
-    JacobianLocal[1][2] = lambda * (-(r0+dr0)*(q1 * y1y2 * x1x2));
-    JacobianLocal[1][3] = lambda * (-(r0+dr0)*(q1 * x1x2 * -1 * x1x2 - 1/sqrtXY));
-    JacobianLocal[1][4] = lambda * (-1 -(r0+dr0)*(q1 * y1y2 * -1 * x1x2));
-    JacobianLocal[1][6] = lambda;
+    JacobianLocal[1][1] = lambda * (-rdr*(-1*x1x2*x1x2/xy_32) - rdr/sqrtXY);
+    JacobianLocal[1][2] = lambda * (-rdr*(-1 * y1y2 * x1x2/xy_32));
+    JacobianLocal[1][3] = lambda * (-rdr*(-1*x1x2 * -1 * x1x2/xy_32) + rdr/sqrtXY);
+    JacobianLocal[1][4] = lambda * (-1*signum -rdr*(-1 * y1y2 * -1 * x1x2/xy_32));
+    JacobianLocal[1][6] = lambda*signum;
     JacobianLocal[1][7] = lambda * (-y1y2/sqrtXY);
     
     JacobianLocal[2][0] = b_;
-    JacobianLocal[2][1] = lambda * (-(r0+dr0)*(q1*x1x2*y1y2));
-    JacobianLocal[2][2] = lambda * (-(r0+dr0) * (q1 * y1y2*y1y2) + 1/sqrtXY);
-    JacobianLocal[2][3] = lambda * (1 - (r0+dr0)*(q1*x1x2 * -1 * y1y2));
-    JacobianLocal[2][4] = lambda * (-(r0+dr0)*(q1*y1y2 * -1 * y1y2-+ 1/sqrtXY));
-    JacobianLocal[2][5] = -lambda;
+    JacobianLocal[2][1] = lambda * (-rdr*(-1*x1x2*y1y2/xy_32));
+    JacobianLocal[2][2] = lambda * (-rdr * (-1* y1y2*y1y2/xy_32) -rdr/sqrtXY);
+    JacobianLocal[2][3] = lambda * (1*signum - rdr*(-1*x1x2 * -1 * y1y2/xy_32));
+    JacobianLocal[2][4] = lambda * (-rdr*(-1*y1y2 * -1 * y1y2/xy_32) + rdr/sqrtXY);
+    JacobianLocal[2][5] = -lambda*signum;
     JacobianLocal[2][7] = lambda * (-y1y2/sqrtXY);
 
     JacobianLocal[3][0] = c_;
-    JacobianLocal[3][1] = lambda * ((r0+dr0) * (q1 * x1x2*x1x2 + 1/sqrtXY));
-    JacobianLocal[3][2] = lambda * (1 + (r0+dr0) * (q1 * y1y2*x1x2));
-    JacobianLocal[3][3] = lambda * ((r0+dr0) * (q1 * x1x2 * -1 * x1x2 -1/sqrtXY));
-    JacobianLocal[3][4] = lambda * ((r0+dr0) * (q1 * y1y2 * -1 * x1x2));
-    JacobianLocal[3][6] = -lambda;
+    JacobianLocal[3][1] = lambda * (rdr * (-1 * x1x2*x1x2/xy_32) + rdr/sqrtXY);
+    JacobianLocal[3][2] = lambda * (1*signum + rdr * (-1 * y1y2*x1x2/xy_32));
+    JacobianLocal[3][3] = lambda * (rdr * (-1 * x1x2 * -1 * x1x2/xy_32) -rdr/sqrtXY);
+    JacobianLocal[3][4] = lambda * (rdr * (-1 * y1y2 * -1 * x1x2/xy_32));
+    JacobianLocal[3][6] = -lambda*signum;
     JacobianLocal[3][7] = lambda * (x1x2/sqrtXY);
     
     JacobianLocal[4][0] = d_;
-    JacobianLocal[4][1] = lambda * (-1 + (r0+dr0)*(q1*x1x2*y1y2));
-    JacobianLocal[4][2] = lambda * ((r0+dr0)*(q1*y1y2*y1y2 + 1/sqrtXY));
-    JacobianLocal[4][3] = lambda * ((r0+dr0)*(x1x2 * -1 * y1y2));
-    JacobianLocal[4][4] = lambda * ((r0+dr0)*(q1*y1y2 * -1 * y1y2 - 1/sqrtXY));
-    JacobianLocal[4][5] = lambda;
+    JacobianLocal[4][1] = lambda * (-1*signum + rdr*(-1*x1x2*y1y2/xy_32));
+    JacobianLocal[4][2] = lambda * (rdr*(-1*y1y2*y1y2/xy_32) + rdr/sqrtXY);
+    JacobianLocal[4][3] = lambda * (rdr*(-1*x1x2 * -1 * y1y2/xy_32));
+    JacobianLocal[4][4] = lambda * (rdr*(-1*y1y2 * -1 * y1y2/xy_32) - rdr/sqrtXY);
+    JacobianLocal[4][5] = lambda*signum;
     JacobianLocal[4][7] = lambda * (y1y2/sqrtXY);
     
     JacobianLocal[5][0] = e_;
-    JacobianLocal[5][2] = -lambda;
-    JacobianLocal[5][4] = lambda;
+    JacobianLocal[5][2] = -lambda*signum;
+    JacobianLocal[5][4] = lambda*signum;
     
     JacobianLocal[6][0] = f_;
-    JacobianLocal[6][1] = lambda;
-    JacobianLocal[6][3] = -lambda;
+    JacobianLocal[6][1] = lambda*signum;
+    JacobianLocal[6][3] = -lambda*signum;
     
     JacobianLocal[7][0] = g_;
     JacobianLocal[7][1] = lambda * (-x1x2/sqrtXY);
@@ -1395,18 +1402,24 @@ function getDerivativeFunction_DistancePointLine(constraint, unknowns, axisGloba
     const x1x2 = x1 + dx1 - x2 - dx2;
     const y1y2 = y1 + dy1 - y2 - dy2;
     const y2y1 = y2 + dy2 - y1 - dy1;
-    const sqrtXY = Math.sqrt(x1x2 * x1x2 + y1y2 * y1y2);
-    const xy_32 = Math.pow(sqrtXY, 3);
-    const q1 = (-1/xy_32);
+    const xy_ = (x1x2 * x1x2 + y1y2 * y1y2)
+    const sqrtXY = Math.sqrt(xy_);
+    const xy_32 = Math.pow(xy_, 1.5);
+    
+    const q2 = y2y1*(x0+dx0) + x1x2*(y0+dy0) + (x2+dx2)*(y1+dy1) - (x1+dx1)*(y2+dy2);
+    let signum = 0;
+    if (q2 !== 0) {
+        signum = q2/Math.abs(q2);
+    }
 
-    const a_ = (y0 + dy0) - (y2 + dy2) - L * x1x2 / sqrtXY;
-    const b_ = -(x0 + dx0) + (x2 + dx2) - L * y1y2 / sqrtXY;
-    const c_ = -(y0 + dy0) + (y1 + dy1) + L * x1x2 / sqrtXY;
-    const d_ = (x0 + dx0) - (x1 + dx1) + L * y1y2 / sqrtXY;
-    const e_ = y2y1;
-    const f_ = x1x2;
+    const a_ = ((y0 + dy0) - (y2 + dy2))*signum - L * x1x2 / sqrtXY;
+    const b_ = (-(x0 + dx0) + (x2 + dx2))*signum - L * y1y2 / sqrtXY;
+    const c_ = (-(y0 + dy0) + (y1 + dy1))*signum + L * x1x2 / sqrtXY;
+    const d_ = ((x0 + dx0) - (x1 + dx1))*signum + L * y1y2 / sqrtXY;
+    const e_ = y2y1 * signum;
+    const f_ = x1x2 * signum;
 
-    F_Local[0] = y2y1 * (x0 + dx0) + x1x2 * (y0 + dy0) + ((x2 + dx2)*(y1 + dy1) - (x1 + dx1)*(y2 + dy2)) - L * sqrtXY;
+    F_Local[0] = Math.abs(y2y1 * (x0 + dx0) + x1x2 * (y0 + dy0) + ((x2 + dx2)*(y1 + dy1) - (x1 + dx1)*(y2 + dy2))) - L * sqrtXY;
     F_Local[1] = lambda * a_;
     F_Local[2] = lambda * b_;
     F_Local[3] = lambda * c_;
@@ -1422,40 +1435,40 @@ function getDerivativeFunction_DistancePointLine(constraint, unknowns, axisGloba
     JacobianLocal[0][6] = f_;
 
     JacobianLocal[1][0] = a_;
-    JacobianLocal[1][1] = lambda * (-L*(q1*x1x2*x1x2 + 1/sqrtXY));
-    JacobianLocal[1][2] = lambda * (-L*(q1 * y1y2 * x1x2));
-    JacobianLocal[1][3] = lambda * (-L*(q1 * x1x2 * -1 * x1x2 - 1/sqrtXY));
-    JacobianLocal[1][4] = lambda * (-1 -L*(q1 * y1y2 * -1 * x1x2));
-    JacobianLocal[1][6] = lambda;
+    JacobianLocal[1][1] = lambda * (-L*(-1*x1x2*x1x2/xy_32) - L/sqrtXY);
+    JacobianLocal[1][2] = lambda * (-L*(-1 * y1y2 * x1x2/xy_32));
+    JacobianLocal[1][3] = lambda * (-L*(-1 * x1x2 * -1 * x1x2/xy_32) + L/sqrtXY);
+    JacobianLocal[1][4] = lambda * (-1*signum -L*(-1 * y1y2 * -1 * x1x2/xy_32));
+    JacobianLocal[1][6] = lambda * signum;
     
     JacobianLocal[2][0] = b_;
-    JacobianLocal[2][1] = lambda * (-L*(q1*x1x2*y1y2));
-    JacobianLocal[2][2] = lambda * (-L * (q1 * y1y2*y1y2) + 1/sqrtXY);
-    JacobianLocal[2][3] = lambda * (1 - L*(q1*x1x2 * -1 * y1y2));
-    JacobianLocal[2][4] = lambda * (-L*(q1*y1y2 * -1 * y1y2-+ 1/sqrtXY));
-    JacobianLocal[2][5] = -lambda;
+    JacobianLocal[2][1] = lambda * (-L*(-1*x1x2*y1y2/xy_32));
+    JacobianLocal[2][2] = lambda * (-L * (-1 * y1y2*y1y2/xy_32) - L/sqrtXY);
+    JacobianLocal[2][3] = lambda * (1 * signum - L*(-1*x1x2 * -1 * y1y2/xy_32));
+    JacobianLocal[2][4] = lambda * (-L*(-1*y1y2 * -1 * y1y2/xy_32) + L/sqrtXY);
+    JacobianLocal[2][5] = -lambda * signum;
 
     JacobianLocal[3][0] = c_;
-    JacobianLocal[3][1] = lambda * (L * (q1 * x1x2*x1x2 + 1/sqrtXY));
-    JacobianLocal[3][2] = lambda * (1 + L * (q1 * y1y2*x1x2));
-    JacobianLocal[3][3] = lambda * (L * (q1 * x1x2 * -1 * x1x2 -1/sqrtXY));
-    JacobianLocal[3][4] = lambda * (L * (q1 * y1y2 * -1 * x1x2));
-    JacobianLocal[3][6] = -lambda;
+    JacobianLocal[3][1] = lambda * (L * (-1 * x1x2*x1x2/xy_32) + L/sqrtXY);
+    JacobianLocal[3][2] = lambda * (1 * signum + L * (-1 * y1y2*x1x2/xy_32));
+    JacobianLocal[3][3] = lambda * (L * (-1 * x1x2 * -1 * x1x2/xy_32) - L/sqrtXY);
+    JacobianLocal[3][4] = lambda * (L * (-1 * y1y2 * -1 * x1x2/xy_32));
+    JacobianLocal[3][6] = -lambda * signum;
     
     JacobianLocal[4][0] = d_;
-    JacobianLocal[4][1] = lambda * (-1 + L*(q1*x1x2*y1y2));
-    JacobianLocal[4][2] = lambda * (L*(q1*y1y2*y1y2 + 1/sqrtXY));
-    JacobianLocal[4][3] = lambda * (L*(x1x2 * -1 * y1y2));
-    JacobianLocal[4][4] = lambda * (L*(q1*y1y2 * -1 * y1y2 - 1/sqrtXY));
-    JacobianLocal[4][5] = lambda;
+    JacobianLocal[4][1] = lambda * (-1 * signum + L*(-1*x1x2*y1y2/xy_32));
+    JacobianLocal[4][2] = lambda * (L*(-1*y1y2*y1y2/xy_32) + L/sqrtXY);
+    JacobianLocal[4][3] = lambda * (L*(-1* x1x2 * -1 * y1y2/xy_32));
+    JacobianLocal[4][4] = lambda * (L*(-1*y1y2 * -1 * y1y2/xy_32) - L/sqrtXY);
+    JacobianLocal[4][5] = lambda * signum;
     
     JacobianLocal[5][0] = e_;
-    JacobianLocal[5][2] = -lambda;
-    JacobianLocal[5][4] = lambda;
+    JacobianLocal[5][2] = -lambda * signum;
+    JacobianLocal[5][4] = lambda * signum;
     
     JacobianLocal[6][0] = f_;
-    JacobianLocal[6][1] = lambda;
-    JacobianLocal[6][3] = -lambda;
+    JacobianLocal[6][1] = lambda * signum;
+    JacobianLocal[6][3] = -lambda * signum;
 
     return({axisLocal, JacobianLocal, F_Local, dim, localToGlobal});
 }
