@@ -19,6 +19,8 @@
 |ARC_ANGLE   | Угол дуги
 |ARC_TANGENT_ToArc| Касание дуг окружностей (внешнее(OUT) и внутреннее(IN))
 |ARC_TANGENT_ToLine| Касание дуги и прямой
+|ARC_POINT_COINCIDENT | Совмещение точки и конца дуги (1-начальная т., 2-конечная т.)
+|ARC_POINT_FIX | Фиксация конца дуги (1-начальная т., 2-конечная)
 
 Example:
 ```javascript
@@ -43,6 +45,8 @@ Example:
     Constraint({type: ConstraintsTypes.ARC_ANGLE, elements: [arc1], value: 45});
     Constraint({type: ConstraintsTypes.ARC_TANGENT_ToArc, elements:[arc1, arc2], mode: 'IN'}); // mode: 'IN' | 'OUT'
     Constraint({type: ConstraintsTypes.ARC_TANGENT_ToLine, elements:[arc1], lines: [[point3, point2]]});
+    Constraint({type: ConstraintsTypes.ARC_POINT_COINCIDENT, elements:[arc1], points: [point2], mode: 1}); // mode: 1|2
+    Constraint({type: ConstraintsTypes.ARC_POINT_FIX, elements:[arc1], mode: 1}); // mode: 1|2
 ```
 
 

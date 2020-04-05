@@ -17,6 +17,8 @@ import {
     getDerivativeFunction_ArcAngle,
     getDerivativeFunction_ArcTangentToArc,
     getDerivativeFunction_ArcTangentToLine,
+    getDerivativeFunction_ArcPointCoincident,
+    getDerivativeFunction_ArcPointFix,
 } from './constraintFunctions.js';
 import { ConstraintsTypes } from '../ConstraintsTypes.js';
 
@@ -313,6 +315,12 @@ class Kernel {
                 case ConstraintsTypes.ARC_TANGENT_ToLine:
                     constraintFunction = getDerivativeFunction_ArcTangentToLine(constraint, unknowns, globalAxis);
                     break;
+                case ConstraintsTypes.ARC_POINT_COINCIDENT:
+                    constraintFunction = getDerivativeFunction_ArcPointCoincident(constraint, unknowns, globalAxis);
+                    break;
+                case ConstraintsTypes.ARC_POINT_FIX:
+                    constraintFunction = getDerivativeFunction_ArcPointFix(constraint, unknowns, globalAxis);
+                    break;
 
                 default:
                     break;
@@ -385,6 +393,14 @@ class Kernel {
                     axisGlobal.push('lambda_' + constraint.id + '_1');
                     axisGlobal.push('lambda_' + constraint.id + '_2');
                     break;
+                case ConstraintsTypes.ARC_POINT_COINCIDENT:
+                    axisGlobal.push('lambda_' + constraint.id + '_1');
+                    axisGlobal.push('lambda_' + constraint.id + '_2');
+                    break;
+                case ConstraintsTypes.ARC_POINT_FIX:
+                    axisGlobal.push('lambda_' + constraint.id + '_1');
+                    axisGlobal.push('lambda_' + constraint.id + '_2');
+                    break;
                 default:
                     axisGlobal.push('lambda_' + constraint.id);
                     break;
@@ -442,8 +458,25 @@ class Kernel {
                             break;
                         case ConstraintsTypes.ARC_TANGENT_ToArc:
                             elementUsedInConstraints.dR = true;
+                            break;
                         case ConstraintsTypes.ARC_TANGENT_ToLine:
                             elementUsedInConstraints.dR = true;
+                            break;
+                        case ConstraintsTypes.ARC_POINT_COINCIDENT:
+                            elementUsedInConstraints.dR = true;
+                            if (constraint.mode === 2) {
+                                elementUsedInConstraints.dFi2 = true;
+                            } else {
+                                elementUsedInConstraints.dFi1 = true
+                            }
+                            break;
+                        case ConstraintsTypes.ARC_POINT_FIX:
+                            elementUsedInConstraints.dR = true;
+                            if (constraint.mode === 2) {
+                                elementUsedInConstraints.dFi2 = true;
+                            } else {
+                                elementUsedInConstraints.dFi1 = true
+                            }
                             break;
                     }
                 }
@@ -456,6 +489,12 @@ class Kernel {
                         pointsInConstraint.push(constraint.elements[1].center);
                         break;
                     case ConstraintsTypes.ARC_TANGENT_ToLine:
+                        pointsInConstraint.push(constraint.elements[0].center);
+                        break;
+                    case ConstraintsTypes.ARC_POINT_COINCIDENT:
+                        pointsInConstraint.push(constraint.elements[0].center);
+                        break;
+                    case ConstraintsTypes.ARC_POINT_FIX:
                         pointsInConstraint.push(constraint.elements[0].center);
                         break;
                 }
@@ -471,6 +510,14 @@ class Kernel {
                             pointUsedInConstraints.dy = true;
                             break;
                         case ConstraintsTypes.ARC_TANGENT_ToLine:
+                            pointUsedInConstraints.dx = true;
+                            pointUsedInConstraints.dy = true;
+                            break;
+                        case ConstraintsTypes.ARC_POINT_COINCIDENT:
+                            pointUsedInConstraints.dx = true;
+                            pointUsedInConstraints.dy = true;
+                            break;
+                        case ConstraintsTypes.ARC_POINT_FIX:
                             pointUsedInConstraints.dx = true;
                             pointUsedInConstraints.dy = true;
                             break;
@@ -562,6 +609,10 @@ class Kernel {
                             pointUsedInConstraints.dy = true;
                             break;
                         case ConstraintsTypes.DISTANCE_POINT_LINE:
+                            pointUsedInConstraints.dx = true;
+                            pointUsedInConstraints.dy = true;
+                            break;
+                        case ConstraintsTypes.ARC_POINT_COINCIDENT:
                             pointUsedInConstraints.dx = true;
                             pointUsedInConstraints.dy = true;
                             break;

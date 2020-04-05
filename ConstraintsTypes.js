@@ -15,4 +15,6 @@ export const ConstraintsTypes = {
   'ARC_ANGLE': 'ARC_ANGLE',
   'ARC_TANGENT_ToArc': 'ARC_TANGENT_ToArc',
   'ARC_TANGENT_ToLine': 'ARC_TANGENT_ToLine',
+  'ARC_POINT_COINCIDENT': 'ARC_POINT_COINCIDENT',
+  'ARC_POINT_FIX': 'ARC_POINT_FIX',
 };
