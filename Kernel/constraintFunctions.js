@@ -971,25 +971,27 @@ function getDerivativeFunction_ArcLength(constraint, unknowns, axisGlobal) {
     const dFi1 = unknowns[localToGlobal[2]];
     const dFi2 = unknowns[localToGlobal[3]];
     
-    F_Local[0] = (R + dR) * (fi2 + dFi2 - fi1 - dFi1) - length;
-    F_Local[1] = lambda * (fi2 + dFi2 - fi1 - dFi1);
-    F_Local[2] = -lambda * (R + dR);
-    F_Local[3] = lambda * (R + dR);
+    const signum = Math.sign(fi2 + dFi2 - fi1 - dFi1);
+
+    F_Local[0] = (R + dR) * Math.abs(fi2 + dFi2 - fi1 - dFi1) - length;
+    F_Local[1] = lambda * Math.abs(fi2 + dFi2 - fi1 - dFi1);
+    F_Local[2] = -lambda * (R + dR) * signum;
+    F_Local[3] = lambda * (R + dR) * signum;
 
     JacobianLocal[0][0] = 0;
-    JacobianLocal[0][1] = (fi2 + dFi2 - fi1 - dFi1);
-    JacobianLocal[0][2] = (-R - dR);
-    JacobianLocal[0][3] = (R + dR);
+    JacobianLocal[0][1] = Math.abs(fi2 + dFi2 - fi1 - dFi1);
+    JacobianLocal[0][2] = (-R - dR) * signum;
+    JacobianLocal[0][3] = (R + dR) * signum;
 
-    JacobianLocal[1][0] = (fi2 + dFi2 - fi1 - dFi1);
-    JacobianLocal[1][2] = -lambda;
-    JacobianLocal[1][3] = lambda;
+    JacobianLocal[1][0] = Math.abs(fi2 + dFi2 - fi1 - dFi1);
+    JacobianLocal[1][2] = -lambda * signum;
+    JacobianLocal[1][3] = lambda * signum;
 
-    JacobianLocal[2][0] = (-R - dR);
-    JacobianLocal[2][1] = -lambda;
+    JacobianLocal[2][0] = (-R - dR) * signum;
+    JacobianLocal[2][1] = -lambda * signum;
 
-    JacobianLocal[3][0] = (R + dR);
-    JacobianLocal[3][1] = lambda;
+    JacobianLocal[3][0] = (R + dR) * signum;
+    JacobianLocal[3][1] = lambda * signum;
 
     return({axisLocal, JacobianLocal, F_Local, dim, localToGlobal});
 }
@@ -1083,17 +1085,19 @@ function getDerivativeFunction_ArcAngle(constraint, unknowns, axisGlobal) {
     const lambda = unknowns[localToGlobal[0]];
     const dFi1 = unknowns[localToGlobal[1]];
     const dFi2 = unknowns[localToGlobal[2]];
+
+    const signum = Math.sign(fi2 + dFi2 - fi1 - dFi1);
     
-    F_Local[0] = fi2 + dFi2 - fi1 - dFi1 - angle;
-    F_Local[1] = -lambda;
-    F_Local[2] = lambda;
+    F_Local[0] = Math.abs(fi2 + dFi2 - fi1 - dFi1) - angle;
+    F_Local[1] = -lambda * signum;
+    F_Local[2] = lambda * signum;
 
-    JacobianLocal[0][1] = -1;
-    JacobianLocal[0][2] = 1;
+    JacobianLocal[0][1] = -1 * signum;
+    JacobianLocal[0][2] = 1 * signum;
 
-    JacobianLocal[1][0] = -1;
+    JacobianLocal[1][0] = -1 * signum;
 
-    JacobianLocal[2][0] = 1;
+    JacobianLocal[2][0] = 1 * signum;
 
     return({axisLocal, JacobianLocal, F_Local, dim, localToGlobal});
 }
