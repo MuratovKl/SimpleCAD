@@ -1,6 +1,7 @@
 class DataLayer {
   constructor(kernel) {
     this._points = [];
+    this._elements = [];
     this._constrains = [];
     this._kernel = kernel;
   }
@@ -11,6 +12,10 @@ class DataLayer {
 
   addPoint(point) {
     this._points.push(point);
+  }
+
+  addArc(arc) {
+    this._elements.push(arc);
   }
 
   removePoint(id) {
@@ -30,7 +35,7 @@ class DataLayer {
     this._constrains.push(constraint);
 
     try {
-      result = this._kernel.solve(this._points, this._constrains);
+      result = this._kernel.solve(this._points, this._elements, this._constrains);
       console.log(this._points);
     } catch (e) {
       console.error(e.message);
@@ -47,7 +52,7 @@ class DataLayer {
   resolve() {
     let result;
     try {
-      result = this._kernel.solve(this._points, this._constrains);
+      result = this._kernel.solve(this._points, this._elements, this._constrains);
     } catch (e) {
       console.error(e.message);
     }

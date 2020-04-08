@@ -45,6 +45,16 @@
               Линия
             </button>
           </li>
+          <li class="instruments-list__el">
+            <button
+              @click="selectInstrument"
+              data-number="14"
+              class="instrument-btn"
+              :class="{ 'instrument-btn_active': selectedInstrument === 14}"
+            >
+              Дуга
+            </button>
+          </li>
         </ul>
       </div>
       <div class="hr"></div>
@@ -141,6 +151,76 @@
               Точка на прямой
             </button>
           </li>
+          <li class="instruments-list__el">
+            <button
+              @click="selectInstrument"
+              data-number="15"
+              class="instrument-btn"
+              :class="{ 'instrument-btn_active': selectedInstrument === 15}"
+            >
+              Длина дуги
+            </button>
+          </li>
+          <li class="instruments-list__el">
+            <button
+              @click="selectInstrument"
+              data-number="16"
+              class="instrument-btn"
+              :class="{ 'instrument-btn_active': selectedInstrument === 16}"
+            >
+              Радиус дуги
+            </button>
+          </li>
+          <li class="instruments-list__el">
+            <button
+              @click="selectInstrument"
+              data-number="17"
+              class="instrument-btn"
+              :class="{ 'instrument-btn_active': selectedInstrument === 17}"
+            >
+              Угол дуги
+            </button>
+          </li>
+          <li class="instruments-list__el">
+            <button
+              @click="selectInstrument"
+              data-number="18"
+              class="instrument-btn"
+              :class="{ 'instrument-btn_active': selectedInstrument === 18}"
+            >
+              Внешнее касание дуг
+            </button>
+          </li>
+          <li class="instruments-list__el">
+            <button
+              @click="selectInstrument"
+              data-number="19"
+              class="instrument-btn"
+              :class="{ 'instrument-btn_active': selectedInstrument === 19}"
+            >
+              Внутреннее касание дуг
+            </button>
+          </li>
+          <li class="instruments-list__el">
+            <button
+              @click="selectInstrument"
+              data-number="20"
+              class="instrument-btn"
+              :class="{ 'instrument-btn_active': selectedInstrument === 20}"
+            >
+              Касание дуги и линии
+            </button>
+          </li>
+          <li class="instruments-list__el">
+            <button
+              @click="selectInstrument"
+              data-number="21"
+              class="instrument-btn"
+              :class="{ 'instrument-btn_active': selectedInstrument === 21}"
+            >
+              Совмещение точки и конца дуги
+            </button>
+          </li>
         </ul>
       </div>
     </div>
@@ -153,6 +233,7 @@ import { DataLayer } from '../../DataLayer/DataLayer';
 import { Kernel } from '../../Kernel/Kernel';
 import { Point } from '../../Point';
 import { Constraint } from '../../Constraint';
+import { Arc } from '../../Arc';
 
 export default {
   name: 'app',
@@ -165,6 +246,7 @@ export default {
       selectedInstrument: 4,
       drawingPoints: [],
       endOfLine: false,
+      arcDrawingStage: 0, // current stage of drawing arc: 0 - not drawing, 1 - center positioned, 2 - start positioned
       tmpConstraint: null,
       tmpConstraintId: null,
       prevLineDrag: Date.now(),
@@ -288,14 +370,62 @@ export default {
             this.updateDrawing();
             this.tmpConstraint = null;
           }
+        } else if (this.selectedInstrument === 21) {
+          if (!this.tmpConstraint) {
+            let constraint;
+            if (point.relatedArc) {
+              const arc = point.relatedArc;
+              if (point.relatedId == arc.centerPoint.relatedId) {
+                return;
+              }
+
+              const mode = point.relatedId == arc.startPoint.relatedId ? 1 : 2;
+              constraint = new Constraint({ type: 'ARC_POINT_COINCIDENT', elements: [ arc.relatedArc ], mode });
+            } else {
+              constraint = new Constraint({ type: 'ARC_POINT_COINCIDENT', points: [ point.relatedPoint ] });
+            }
+            this.tmpConstraint = constraint;
+            if (point.relatedConstraints[constraint.type]) {
+              point.relatedConstraints[constraint.type].push(constraint);
+            } else {
+              point.relatedConstraints[constraint.type] = [ constraint ];
+            }
+          } else {
+            if (point.relatedArc) {
+              const arc = point.relatedArc;
+              if (point.relatedId == arc.centerPoint.relatedId) {
+                this.tmpConstraint = null;
+                return;
+              }
+              if (this.tmpConstraint.elements) {
+                this.tmpConstraint.points = [ point.relatedPoint ];
+              } else {
+                this.tmpConstraint.elements = [ point.relatedArc.relatedArc ];
+                const mode = point.relatedId == arc.startPoint.relatedId ? 1 : 2;
+                this.tmpConstraint.mode = mode;
+              }
+            } else {
+              if (this.tmpConstraint.points) {
+                this.tmpConstraint = null;
+                return;
+              } else {
+                this.tmpConstraint.points = [ point.relatedPoint ];
+              }
+            }
+            this.dataLayer.addConstraint(this.tmpConstraint);
+            if (point.relatedConstraints[this.tmpConstraint.type]) {
+              point.relatedConstraints[this.tmpConstraint.type].push(this.tmpConstraint);
+            } else {
+              point.relatedConstraints[this.tmpConstraint.type] = [ this.tmpConstraint ];
+            }
+            this.updateDrawing();
+            this.tmpConstraint = null;
+          }
         }
       });
       point.on('dragmove', (event) => {
-        if (!point.relatedLine) {
-          const relatedPoint = point.relatedPoint;
-          relatedPoint.x = point.x();
-          relatedPoint.y = point.y();
-        } else {
+
+        if (point.relatedLine) {
           const relatedPoint = point.relatedPoint;
           const line = point.relatedLine;
           const linePoints = line.points();
@@ -312,6 +442,92 @@ export default {
           relatedPoint.y = point.y();
           line.points(linePoints);
           this.layer.draw();
+        } else if (point.relatedArc) {
+          const relatedPoint = point.relatedPoint;
+          const arc = point.relatedArc;
+          const arcModel = point.relatedArc.relatedArc;
+          const centerPoint = arc.centerPoint;
+          const startPoint = arc.startPoint;
+          const endPoint = arc.endPoint;
+
+          if (point.relatedId == centerPoint.relatedId) { // move arc center
+            const deltaX = point.x() - relatedPoint.x;
+            const deltaY = point.y() - relatedPoint.y;
+
+            relatedPoint.x = point.x();
+            relatedPoint.y = point.y();
+
+            arc.x(point.x());
+            arc.y(point.y());
+
+            startPoint.x(startPoint.x() + deltaX);
+            startPoint.y(startPoint.y() + deltaY);
+            startPoint.relatedPoint.x = startPoint.x();
+            startPoint.relatedPoint.y = startPoint.y();
+            
+            endPoint.x(endPoint.x() + deltaX);
+            endPoint.y(endPoint.y() + deltaY);
+            endPoint.relatedPoint.x = endPoint.x();
+            endPoint.relatedPoint.y = endPoint.y();
+          } else if (point.relatedId == startPoint.relatedId) { // move arc start point
+            const arcRadius = arc.innerRadius();
+            const deltaX = point.x() - centerPoint.x();
+            const deltaY = point.y() - centerPoint.y();
+
+            let startAngleRad = Math.atan(deltaY / deltaX);
+            let startAngleDeg = startAngleRad * (180 / Math.PI);
+            if ((deltaX < 0 && deltaY >= 0) || (deltaX < 0 && deltaY < 0)) {
+              startAngleDeg += 180;
+              startAngleRad += Math.PI;
+            }
+            const rotationDelta = startAngleDeg - arc.rotation();
+            const newStartYPos = (Math.sin(startAngleRad) * arcRadius) + centerPoint.y();
+            const newStartXPos = (Math.cos(startAngleRad) * arcRadius) + centerPoint.x();
+            arc.rotation(startAngleDeg);
+            point.x(newStartXPos);
+            point.y(newStartYPos);
+            relatedPoint.x = point.x();
+            relatedPoint.y = point.y();
+
+            const endAngle = (arc.rotation() + arc.angle()) * (Math.PI / 180);
+            const newEndYPos = (Math.sin(endAngle) * arcRadius) + centerPoint.y();
+            const newEndXPos = (Math.cos(endAngle) * arcRadius) + centerPoint.x();
+
+            endPoint.x(newEndXPos);
+            endPoint.y(newEndYPos);
+            endPoint.relatedPoint.x = endPoint.x();
+            endPoint.relatedPoint.y = endPoint.y();
+
+          } else if (point.relatedId == endPoint.relatedId) { // move arc end point
+            const arcRadius = arc.innerRadius();
+            const deltaX = point.x() - centerPoint.x();
+            const deltaY = point.y() - centerPoint.y();
+
+            let endAngleRad = Math.atan(deltaY / deltaX);
+            let endAngleDeg = endAngleRad * (180 / Math.PI);
+            if ((deltaX < 0 && deltaY >= 0) || (deltaX < 0 && deltaY < 0)) {
+              endAngleDeg += 180;
+              endAngleRad += Math.PI;
+            }
+            const newEndYPos = (Math.sin(endAngleRad) * arcRadius) + centerPoint.y();
+            const newEndXPos = (Math.cos(endAngleRad) * arcRadius) + centerPoint.x();
+            point.x(newEndXPos);
+            point.y(newEndYPos);
+            relatedPoint.x = point.x();
+            relatedPoint.y = point.y();
+
+            const newArcAngle = endAngleDeg - arc.rotation();
+            arc.angle(newArcAngle);
+          }
+          arcModel.center = centerPoint.relatedPoint;
+          arcModel.fi1 = arc.rotation();
+          arcModel.fi2 = arc.rotation() + arc.angle();
+
+          this.layer.draw();
+        } else {
+          const relatedPoint = point.relatedPoint;
+          relatedPoint.x = point.x();
+          relatedPoint.y = point.y();
         }
         if (Date.now() - this.prevLineDrag > 5) {
           try {
@@ -326,7 +542,7 @@ export default {
       });
 
       point.on('dragstart', () => {
-        if (!point.relatedConstraints['FIX_POINT']) {
+        if (!point.relatedConstraints['FIX_POINT'] && !point.relatedArc) {
           const tmpConstraint = new Constraint({ type: 'FIX_POINT', points: [point.relatedPoint] });
           this.tmpConstraintId = tmpConstraint.id;
           this.dataLayer.addTmpConstraint(tmpConstraint);
@@ -350,7 +566,11 @@ export default {
       point.on('mouseleave', () => {
         if (point.draggable()) {
           point.radius(5);
-          point.fill('#244CE5');
+          if (point.relatedArc && point.relatedArc.centerPoint == point) {
+            point.fill('#ffd500');
+          } else {
+            point.fill('#244CE5');
+          }
           this.layer.draw();
         }
       });
@@ -375,9 +595,52 @@ export default {
       }
       this.layer.draw();
     },
+    updateArcPos(arc) {
+      const arcModel = arc.relatedArc;
+      console.log(arcModel);
+      const { center, R, fi1, fi2 } = arcModel;
+      const centerPoint = arc.centerPoint;
+      const startPoint = arc.startPoint;
+      const endPoint = arc.endPoint;
+
+      arc.x(center.x);
+      arc.y(center.y);
+      arc.rotation(fi1)
+      arc.angle(fi2 - fi1);
+      arc.innerRadius(R)
+      arc.outerRadius(R + 5);
+
+      centerPoint.x(center.x);
+      centerPoint.y(center.y);
+      centerPoint.relatedPoint.x = center.x;
+      centerPoint.relatedPoint.y = center.y;
+
+
+      let startAngleRad = fi1 * (Math.PI / 180);
+      let endAngleRad = fi2 * (Math.PI / 180);
+      const newStartYPos = (Math.sin(startAngleRad) * R) + centerPoint.y();
+      const newStartXPos = (Math.cos(startAngleRad) * R) + centerPoint.x();
+      const newEndYPos = (Math.sin(endAngleRad) * R) + centerPoint.y();
+      const newEndXPos = (Math.cos(endAngleRad) * R) + centerPoint.x();
+
+      startPoint.x(newStartXPos);
+      startPoint.y(newStartYPos);
+      startPoint.relatedPoint.x = startPoint.x();
+      startPoint.relatedPoint.y = startPoint.y();
+
+      endPoint.x(newEndXPos);
+      endPoint.y(newEndYPos);
+      endPoint.relatedPoint.x = endPoint.x();
+      endPoint.relatedPoint.y = endPoint.y();
+
+      this.layer.draw();
+    },
     updateDrawing() {
       for (let point of this.drawingPoints) {
         this.updatePointPos(point);
+        if (point.relatedArc) {
+          this.updateArcPos(point.relatedArc);
+        }
       }
     },
     updateLineObject(line) {
@@ -398,6 +661,34 @@ export default {
       startPRel.y = startP.y();
       endPRel.x = endP.x();
       endPRel.y = endP.y();
+
+      this.layer.draw();
+    },
+    updateArcObject(arc) {
+      const centerPoint = arc.centerPoint;
+      const startPoint = arc.startPoint;
+      const endPoint = arc.endPoint;
+
+      const arcX = arc.x();
+      const arcY = arc.y();
+      const deltaX = arcX - centerPoint.x();
+      const deltaY = arcY - centerPoint.y();
+      const arcRad = arc.innerRadius();
+
+      centerPoint.x(arcX);
+      centerPoint.y(arcY);
+      centerPoint.relatedPoint.x = centerPoint.x();
+      centerPoint.relatedPoint.y = centerPoint.y();
+
+      startPoint.x(startPoint.x() + deltaX);
+      startPoint.y(startPoint.y() + deltaY);
+      startPoint.relatedPoint.x = startPoint.x();
+      startPoint.relatedPoint.y = startPoint.y();
+
+      endPoint.x(endPoint.x() + deltaX);
+      endPoint.y(endPoint.y() + deltaY);
+      endPoint.relatedPoint.x = endPoint.x();
+      endPoint.relatedPoint.y = endPoint.y();
 
       this.layer.draw();
     },
@@ -524,6 +815,30 @@ export default {
             this.updateDrawing();
             this.tmpConstraint = null;
           }
+        } else if (this.selectedInstrument === 20) {
+          if (!this.tmpConstraint) {
+            const constraint = new Constraint({ type: 'ARC_TANGENT_ToLine', lines: [[ line.startPoint.relatedPoint, line.endPoint.relatedPoint ]] });
+            this.tmpConstraint = constraint;
+            if (line.relatedConstraints[constraint.type]) {
+              line.relatedConstraints[constraint.type].push(constraint);
+            } else {
+              line.relatedConstraints[constraint.type] = [ constraint ];
+            }
+          } else {
+            if (this.tmpConstraint.lines) {
+              this.tmpConstraint = null;
+              return;
+            }
+            this.tmpConstraint.lines = [[ line.startPoint.relatedPoint, line.endPoint.relatedPoint ]];
+            this.dataLayer.addConstraint(this.tmpConstraint);
+            if (line.relatedConstraints[this.tmpConstraint.type]) {
+              line.relatedConstraints[this.tmpConstraint.type].push(this.tmpConstraint);
+            } else {
+              line.relatedConstraints[this.tmpConstraint.type] = [ this.tmpConstraint ];
+            }
+            this.updateDrawing();
+            this.tmpConstraint = null;
+          }
         }
       });
       line.on('dragmove', () => {
@@ -551,6 +866,115 @@ export default {
         this.layer.draw();
       });
     },
+    setArcEvents(arc) {
+      arc.on('click', () => {
+        console.log('arc events');
+        if (this.selectedInstrument === 15 && !('ARC_LENGTH' in arc.relatedConstraints)) {
+          console.log('arc length')
+          const answer = parseFloat(prompt('Введите длину дуги:'));
+          if (isNaN(answer)) {
+            alert('Введено неверное значение длины');
+            return;
+          }
+          console.log(arc.relatedArc);
+          const constraint = new Constraint({ type: 'ARC_LENGTH', elements: [arc.relatedArc], value: answer });
+          arc.relatedConstraints[constraint.type] = [ constraint ];
+          this.dataLayer.addConstraint(constraint);
+          this.updateDrawing();
+        } else if (this.selectedInstrument === 16 && !('ARC_RADIUS' in arc.relatedConstraints)) {
+          console.log('arc radius')
+          const answer = parseFloat(prompt('Введите радиус дуги:'));
+          if (isNaN(answer)) {
+            alert('Введено неверное значение радиуса');
+            return;
+          }
+          console.log(arc.relatedArc);
+          const constraint = new Constraint({ type: 'ARC_RADIUS', elements: [arc.relatedArc], value: answer });
+          arc.relatedConstraints[constraint.type] = [ constraint ];
+          this.dataLayer.addConstraint(constraint);
+          this.updateDrawing();
+        } else if (this.selectedInstrument === 17 && !('ARC_ANGLE' in arc.relatedConstraints)) {
+          console.log('arc angle')
+          const answer = parseFloat(prompt('Введите угол дуги:'));
+          if (isNaN(answer)) {
+            alert('Введено неверное значение угла');
+            return;
+          }
+          console.log(arc.relatedArc);
+          const constraint = new Constraint({ type: 'ARC_ANGLE', elements: [arc.relatedArc], value: answer });
+          arc.relatedConstraints[constraint.type] = [ constraint ];
+          this.dataLayer.addConstraint(constraint);
+          this.updateDrawing();
+        } else if (this.selectedInstrument === 18 || this.selectedInstrument === 19) {
+          if (!this.tmpConstraint) {
+            const constraint = new Constraint({ type: 'ARC_TANGENT_ToArc', elements: [ arc.relatedArc ], mode: this.selectedInstrument === 18 ? 'OUT' : 'IN' });
+            this.tmpConstraint = constraint;
+            if (arc.relatedConstraints[constraint.type]) {
+              arc.relatedConstraints[constraint.type].push(constraint);
+            } else {
+              arc.relatedConstraints[constraint.type] = [ constraint ];
+            }
+          } else {
+            this.tmpConstraint.elements.push(arc.relatedArc);
+            this.dataLayer.addConstraint(this.tmpConstraint);
+            if (arc.relatedConstraints[this.tmpConstraint.type]) {
+              arc.relatedConstraints[this.tmpConstraint.type].push(this.tmpConstraint);
+            } else {
+              arc.relatedConstraints[this.tmpConstraint.type] = [ this.tmpConstraint ];
+            }
+            this.updateDrawing();
+            this.tmpConstraint = null;
+          }
+        } else if (this.selectedInstrument === 20) {
+          if (!this.tmpConstraint) {
+            const constraint = new Constraint({ type: 'ARC_TANGENT_ToLine', elements: [ arc.relatedArc ] });
+            this.tmpConstraint = constraint;
+            if (arc.relatedConstraints[constraint.type]) {
+              arc.relatedConstraints[constraint.type].push(constraint);
+            } else {
+              arc.relatedConstraints[constraint.type] = [ constraint ];
+            }
+          } else {
+            if (this.tmpConstraint.elements) {
+              this.tmpConstraint = null;
+              return;
+            }
+            this.tmpConstraint.elements = [ arc.relatedArc ];
+            this.dataLayer.addConstraint(this.tmpConstraint);
+            if (arc.relatedConstraints[this.tmpConstraint.type]) {
+              arc.relatedConstraints[this.tmpConstraint.type].push(this.tmpConstraint);
+            } else {
+              arc.relatedConstraints[this.tmpConstraint.type] = [ this.tmpConstraint ];
+            }
+            this.updateDrawing();
+            this.tmpConstraint = null;
+          }
+        }
+      });
+      arc.on('dragmove', () => {
+        this.updateArcObject(arc);
+        if (Date.now() - this.prevLineDrag > 5) {
+          try {
+            if (this.dataLayer.resolve()) {
+              this.updateDrawing();
+            }
+          } catch (e) {
+            console.error(e.message);
+          }
+          this.prevLineDrag = Date.now();
+        }
+      });
+      arc.on('mouseenter', () => {
+        arc.outerRadius(arc.outerRadius() + 2);
+        arc.fill('green');
+        this.layer.draw();
+      });
+      arc.on('mouseleave', () => {
+        arc.outerRadius(arc.outerRadius() - 2);
+        arc.fill('#244CE5');
+        this.layer.draw();
+      });
+    },
     setContainerEvents(container) {
       // mouseover handler
       container.addEventListener('mousemove', (event) => {
@@ -566,7 +990,39 @@ export default {
           linePoints[2] = pointerX;
           linePoints[3] = pointerY;
           endPoint.relatedLine.points(linePoints);
+          console.log(endPoint.relatedLine.rotation());
           this.layer.draw();
+        } else if (this.arcDrawingStage == 1) {
+          const radiusPoint = this.drawingPoints[this.drawingPoints.length - 1];
+          radiusPoint.x(pointerX);
+          radiusPoint.y(pointerY);
+          radiusPoint.relatedPoint.x = radiusPoint.x();
+          radiusPoint.relatedPoint.y = radiusPoint.y();
+          this.layer.draw();
+        } else if (this.arcDrawingStage == 2) {
+          const endPoint = this.drawingPoints[this.drawingPoints.length - 1];
+          const centerPoint = this.drawingPoints[this.drawingPoints.length - 3];
+          const arcRadius = endPoint.relatedArc.innerRadius();
+          const deltaX = pointerX - centerPoint.x();
+          const deltaY = pointerY - centerPoint.y();
+          let startAngleRad = Math.atan(deltaY / deltaX);
+          let startAngleDeg = startAngleRad * (180 / Math.PI);
+          if ((deltaX < 0 && deltaY >= 0) || (deltaX < 0 && deltaY < 0)) {
+              startAngleDeg += 180;
+              startAngleRad += Math.PI;
+            }
+
+          const newYPos = (Math.sin(startAngleRad) * arcRadius) + centerPoint.y();
+          const newXPos = (Math.cos(startAngleRad) * arcRadius) + centerPoint.x();
+
+          endPoint.x(newXPos);
+          endPoint.y(newYPos);
+          endPoint.relatedPoint.x = endPoint.x();
+          endPoint.relatedPoint.y = endPoint.y();
+          endPoint.relatedArc.angle(startAngleDeg - endPoint.relatedArc.rotation());
+
+          this.layer.draw();
+
         }
       });
 
@@ -618,7 +1074,6 @@ export default {
               strokeWidth: 3,
               draggable: true,
             });
-            
             drawingLine.startPoint = sP;
             drawingLine.endPoint = eP;
             drawingLine.relatedConstraints = {};
@@ -645,6 +1100,100 @@ export default {
             const relPoint = endPoint.relatedPoint;
             relPoint.x = endPoint.x();
             relPoint.y = endPoint.y();
+          }
+        } else if (this.selectedInstrument === 14) { // selected instrument - arc
+          console.log('arc');
+          if (this.arcDrawingStage == 0) {
+            const centerModelPoint = new Point(pointerX, pointerY);
+            const radiusModelPoint = new Point(pointerX, pointerY);
+            this.dataLayer.addPoint(centerModelPoint);
+            this.dataLayer.addPoint(radiusModelPoint);
+            const cP = new Konva.Circle({
+              radius: 5,
+              fill: '#ffd500',
+              x: pointerX,
+              y: pointerY,
+              draggable: true,
+            });
+            const rP = cP.clone();
+            this.setPointEvents(cP);
+            this.setPointEvents(rP);
+            this.drawingPoints.push(cP);
+            this.drawingPoints.push(rP);
+
+            cP.relatedPoint = centerModelPoint;
+            cP.relatedId = centerModelPoint.id;
+            cP.relatedConstraints = {};
+
+            rP.relatedPoint = radiusModelPoint;
+            rP.relatedId = radiusModelPoint.id;
+            rP.relatedConstraints = {};
+
+            this.layer.add(cP);
+            this.layer.add(rP);
+            this.layer.draw();
+
+            this.arcDrawingStage = 1;
+          } else if (this.arcDrawingStage == 1) {
+            const centerPoint = this.drawingPoints[this.drawingPoints.length - 2];
+            const startPoint = this.drawingPoints[this.drawingPoints.length - 1];
+            const endModelPoint = new Point(pointerX, pointerY);
+            this.dataLayer.addPoint(endModelPoint);
+            const eP = new Konva.Circle({
+              radius: 5,
+              fill: '#244CE5',
+              x: pointerX,
+              y: pointerY,
+              draggable: true,
+            });
+            this.setPointEvents(eP);
+            eP.relatedPoint = endModelPoint;
+            eP.relatedId = endModelPoint.id;
+            eP.relatedConstraints = {};
+            this.drawingPoints.push(eP);
+
+            const deltaX = startPoint.x() - centerPoint.x();
+            const deltaY = startPoint.y() - centerPoint.y();
+            let startAngle = Math.atan(deltaY / deltaX) * (180 / Math.PI);
+            if ((deltaX < 0 && deltaY >= 0) || (deltaX < 0 && deltaY < 0)) {
+              startAngle += 180;
+            }
+            const arcRadius = Math.sqrt(Math.pow(deltaX, 2) + Math.pow(deltaY, 2));
+
+            const arc = new Konva.Arc({
+              x: centerPoint.x(),
+              y: centerPoint.y(),
+              innerRadius: arcRadius,
+              outerRadius: arcRadius + 3,
+              angle: 0,
+              fill: '#244CE5',
+              stroke: '#244CE5',
+              strokeWidth: 0,
+              rotation: startAngle,
+              clockwise: true,
+              draggable: true,
+            });
+
+            centerPoint.relatedArc = arc;
+            startPoint.relatedArc = arc;
+            eP.relatedArc = arc;
+            arc.centerPoint = centerPoint;
+            arc.startPoint = startPoint;
+            arc.endPoint = eP;
+            arc.relatedConstraints = {};
+
+            this.layer.add(eP);
+            this.layer.add(arc);
+            this.layer.draw();
+            this.arcDrawingStage = 2;
+          } else if (this.arcDrawingStage == 2) {
+            const arc = this.drawingPoints[this.drawingPoints.length - 1].relatedArc;
+            let arcModel = new Arc(arc.centerPoint.relatedPoint, arc.innerRadius(), arc.rotation(), arc.rotation() + arc.angle(), 'DEG');
+            arc.relatedArc = arcModel;
+            arc.relatedId = arcModel.id;
+            this.setArcEvents(arc);
+            this.dataLayer.addArc(arcModel);
+            this.arcDrawingStage = 0;
           }
         }
       });
