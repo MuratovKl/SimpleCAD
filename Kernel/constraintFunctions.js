@@ -1304,7 +1304,7 @@ function getDerivativeFunction_ArcTangentToLine(constraint, unknowns, axisGlobal
     JacobianLocal[1][3] = lambda * (-rdr*(-1*x1x2 * -1 * x1x2/xy_32) + rdr/sqrtXY);
     JacobianLocal[1][4] = lambda * (-1*signum -rdr*(-1 * y1y2 * -1 * x1x2/xy_32));
     JacobianLocal[1][6] = lambda*signum;
-    JacobianLocal[1][7] = lambda * (-y1y2/sqrtXY);
+    JacobianLocal[1][7] = lambda * (-x1x2/sqrtXY);
     
     JacobianLocal[2][0] = b_;
     JacobianLocal[2][1] = lambda * (-rdr*(-1*x1x2*y1y2/xy_32));
