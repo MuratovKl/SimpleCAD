@@ -27,6 +27,8 @@ import { ConstraintsTypes } from '../ConstraintsTypes.js';
  * Kernel of CAD system
  */
 class Kernel {
+    static _NewtonMaxIterations = 1500;
+    static _NewtonTolerance = 1e-8;
     /**
      * main method of Kernel for solving
      * 
@@ -49,7 +51,7 @@ class Kernel {
 
         let deltas
         try {
-            deltas = this._NewtonMethod(axisGlobal, constraints, 1500, 1e-12);
+            deltas = this._NewtonMethod(axisGlobal, constraints, Kernel._NewtonMaxIterations, Kernel._NewtonTolerance);
         } catch (e) {
             throw e;
         }

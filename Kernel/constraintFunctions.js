@@ -1560,7 +1560,7 @@ function getDerivativeFunction_ArcPointCoincident(constraint, unknowns, axisGlob
     JacobianLocal[0][2] = 1;
     JacobianLocal[0][4] = -1;
     JacobianLocal[0][6] = -cosFi;
-    JacobianLocal[0][6] = (r+dr)*sinFi;
+    JacobianLocal[0][7] = (r+dr)*sinFi;
     JacobianLocal[1][3] = 1;
     JacobianLocal[1][5] = -1;
     JacobianLocal[1][6] = -sinFi;
@@ -1582,7 +1582,7 @@ function getDerivativeFunction_ArcPointCoincident(constraint, unknowns, axisGlob
 
 
 /**
- * Function for ArcPointCoincident constraint. 
+ * Function for ArcPointFix constraint. 
  * This function fill local matrix J and vector F.
  * 
  * @param {Constraint} constraint 
