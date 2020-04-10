@@ -221,6 +221,36 @@
               Совмещение точки и конца дуги
             </button>
           </li>
+          <li class="instruments-list__el">
+            <button
+              @click="selectInstrument"
+              data-number="22"
+              class="instrument-btn"
+              :class="{ 'instrument-btn_active': selectedInstrument === 22}"
+            >
+              Фиксация конца дуги
+            </button>
+          </li>
+          <li class="instruments-list__el">
+            <button
+              @click="selectInstrument"
+              data-number="23"
+              class="instrument-btn"
+              :class="{ 'instrument-btn_active': selectedInstrument === 23}"
+            >
+              Равная длина прямых
+            </button>
+          </li>
+          <li class="instruments-list__el">
+            <button
+              @click="selectInstrument"
+              data-number="24"
+              class="instrument-btn"
+              :class="{ 'instrument-btn_active': selectedInstrument === 24}"
+            >
+              Расстояние между точкой и прямой
+            </button>
+          </li>
         </ul>
       </div>
     </div>
@@ -421,6 +451,54 @@ export default {
             this.updateDrawing();
             this.tmpConstraint = null;
           }
+        } else if (this.selectedInstrument === 22 && !('ARC_POINT_FIX' in point.relatedConstraints)) {
+          if (!point.relatedArc) {
+            return;
+          }
+          let mode;
+          if (point.relatedId = point.relatedArc.startPoint.relatedId) {
+            mode = 1;
+          } else {
+            mode = 2
+          }
+
+          const constraint = new Constraint({ type: 'ARC_POINT_FIX', elements: [point.relatedArc.relatedArc], mode });
+          point.relatedConstraints[constraint.type] = [ constraint ];
+          point.draggable(false);
+          point.fill('grey');
+          this.dataLayer.addConstraint(constraint);
+          this.updateDrawing();
+        } else if (this.selectedInstrument === 24) {
+          if (!this.tmpConstraint) {
+            const constraint = new Constraint({ type: 'DISTANCE_POINT_LINE', points: [ point.relatedPoint ] });
+            this.tmpConstraint = constraint;
+            if (point.relatedConstraints[constraint.type]) {
+              point.relatedConstraints[constraint.type].push(constraint);
+            } else {
+              point.relatedConstraints[constraint.type] = [ constraint ];
+            }
+          } else {
+            if (this.tmpConstraint.points) {
+              this.tmpConstraint = null;
+              return
+            }
+            const answer = parseFloat(prompt('Введите расстояние:'));
+            if (isNaN(answer)) {
+              alert('Введено неверное значение расстояние');
+              this.tmpConstraint = null;
+              return;
+            }
+            this.tmpConstraint.points = [ point.relatedPoint ];
+            this.tmpConstraint.value = answer;
+            this.dataLayer.addConstraint(this.tmpConstraint);
+            if (point.relatedConstraints[this.tmpConstraint.type]) {
+              point.relatedConstraints[this.tmpConstraint.type].push(this.tmpConstraint);
+            } else {
+              point.relatedConstraints[this.tmpConstraint.type] = [ this.tmpConstraint ];
+            }
+            this.updateDrawing();
+            this.tmpConstraint = null;
+          }
         }
       });
       point.on('dragmove', (event) => {
@@ -598,10 +676,20 @@ export default {
     updateArcPos(arc) {
       const arcModel = arc.relatedArc;
       console.log(arcModel);
-      const { center, R, fi1, fi2 } = arcModel;
+      let { center, R, fi1, fi2 } = arcModel;
       const centerPoint = arc.centerPoint;
       const startPoint = arc.startPoint;
       const endPoint = arc.endPoint;
+      fi2 %= 360;
+      fi1 %= 360;
+      if (fi1 < 0) {
+        fi1 += 360;
+      }
+      if (fi2 < 0) {
+        fi2 += 360;
+      }
+      console.log(`fi1: ${fi1}`);
+      console.log(`fi2: ${fi2}`);
 
       arc.x(center.x);
       arc.y(center.y);
@@ -830,6 +918,57 @@ export default {
               return;
             }
             this.tmpConstraint.lines = [[ line.startPoint.relatedPoint, line.endPoint.relatedPoint ]];
+            this.dataLayer.addConstraint(this.tmpConstraint);
+            if (line.relatedConstraints[this.tmpConstraint.type]) {
+              line.relatedConstraints[this.tmpConstraint.type].push(this.tmpConstraint);
+            } else {
+              line.relatedConstraints[this.tmpConstraint.type] = [ this.tmpConstraint ];
+            }
+            this.updateDrawing();
+            this.tmpConstraint = null;
+          }
+        } else if (this.selectedInstrument === 23) {
+          if (!this.tmpConstraint) {
+            const constraint = new Constraint({ type: 'EQUAL_LINES', lines: [[ line.startPoint.relatedPoint, line.endPoint.relatedPoint ]] });
+            this.tmpConstraint = constraint;
+            if (line.relatedConstraints[constraint.type]) {
+              line.relatedConstraints[constraint.type].push(constraint);
+            } else {
+              line.relatedConstraints[constraint.type] = [ constraint ];
+            }
+          } else {
+            this.tmpConstraint.lines.push([ line.startPoint.relatedPoint, line.endPoint.relatedPoint ]);
+            this.dataLayer.addConstraint(this.tmpConstraint);
+            if (line.relatedConstraints[this.tmpConstraint.type]) {
+              line.relatedConstraints[this.tmpConstraint.type].push(this.tmpConstraint);
+            } else {
+              line.relatedConstraints[this.tmpConstraint.type] = [ this.tmpConstraint ];
+            }
+            this.updateDrawing();
+            this.tmpConstraint = null;
+          }
+        } else if (this.selectedInstrument === 24) {
+          if (!this.tmpConstraint) {
+            const constraint = new Constraint({ type: 'DISTANCE_POINT_LINE', lines: [[ line.startPoint.relatedPoint, line.endPoint.relatedPoint ]] });
+            this.tmpConstraint = constraint;
+            if (line.relatedConstraints[constraint.type]) {
+              line.relatedConstraints[constraint.type].push(constraint);
+            } else {
+              line.relatedConstraints[constraint.type] = [ constraint ];
+            }
+          } else {
+            if (this.tmpConstraint.lines) {
+              this.tmpConstraint = null;
+              return
+            }
+            const answer = parseFloat(prompt('Введите расстояние:'));
+            if (isNaN(answer)) {
+              alert('Введено неверное значение расстояние');
+              this.tmpConstraint = null;
+              return;
+            }
+            this.tmpConstraint.lines = [[ line.startPoint.relatedPoint, line.endPoint.relatedPoint ]];
+            this.tmpConstraint.value = answer;
             this.dataLayer.addConstraint(this.tmpConstraint);
             if (line.relatedConstraints[this.tmpConstraint.type]) {
               line.relatedConstraints[this.tmpConstraint.type].push(this.tmpConstraint);
