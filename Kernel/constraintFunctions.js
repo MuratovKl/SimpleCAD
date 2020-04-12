@@ -916,9 +916,9 @@ function getDerivativeFunction_EqualLines(constraint, unknowns, axisGlobal) {
     JacobianLocal[7][5] = 2 * lambda;
     JacobianLocal[7][7] = -2 * lambda;
 
-    JacobianLocal[6][0] = -2 * (y2_f + dy2_f - y2_s - dy2_s);
-    JacobianLocal[6][6] = 2 * lambda;
-    JacobianLocal[6][8] = -2 * lambda;
+    JacobianLocal[8][0] = -2 * (y2_f + dy2_f - y2_s - dy2_s);
+    JacobianLocal[8][6] = 2 * lambda;
+    JacobianLocal[8][8] = -2 * lambda;
 
     return({axisLocal, JacobianLocal, F_Local, dim, localToGlobal});
 }

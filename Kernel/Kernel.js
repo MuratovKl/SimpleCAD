@@ -164,7 +164,7 @@ class Kernel {
             try {
                 deltaX = this._solveSystemOfEquation(Jacobian, F);
             } catch (e) {
-                throw e;
+                throw new Error(e.message + "\nIteration=" + k);
             }
 
             // X = X_prev + deltaX
