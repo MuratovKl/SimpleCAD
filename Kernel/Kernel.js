@@ -67,6 +67,9 @@ class Kernel {
         let idStr;
         let type;
         for (let i = 0; i < axisGlobal.length; i++) {
+            if (isNaN(deltas[i])) {
+                throw Error("NaN: " + axisGlobal[i])
+            }
             [name, idStr, type] = axisGlobal[i].split('_'); // dx_1, dFi1_2_ARC etc.
             if (!isNaN(idStr) && name) {
                 let idx;
@@ -95,9 +98,13 @@ class Kernel {
                             return (elem.id === id) && (elem.type === type);
                         })
                         if (idx != -1) {
+                            if (!(elements[idx].R + deltas[i] > 0)) {
+                                throw Error("new radius <= 0");
+                            }
                             elements[idx].R += deltas[i]
                         }
                         break;
+                    // TODO -360 <= fi <= 360 !!!
                     case 'dFi1':
                         idx = elements.findIndex(elem => {
                             let id = Number.parseInt(idStr);
