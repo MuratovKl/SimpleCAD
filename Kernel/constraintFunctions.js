@@ -1677,6 +1677,115 @@ function getDerivativeFunction_ArcPointFix(constraint, unknowns, axisGlobal) {
     return({axisLocal, JacobianLocal, F_Local, dim, localToGlobal});
 }
 
+/**
+ * Function for ArcLinePerpendicular constraint. 
+ * This function fill local matrix J and vector F.
+ * 
+ * @param {Constraint} constraint 
+ * @returns {Object} Object with axis names, local Jacobian and local vector F
+ */
+function getDerivativeFunction_ArcLinePerpendicular(constraint, unknowns, axisGlobal) {
+    const dim = 6;
+    
+    const axisLocal = [];
+    axisLocal.push('lambda_' + constraint.id)
+    axisLocal.push('dx_' + constraint.lines[0][0].id);
+    axisLocal.push('dy_' + constraint.lines[0][0].id);
+    axisLocal.push('dx_' + constraint.lines[0][1].id);
+    axisLocal.push('dy_' + constraint.lines[0][1].id);
+    const fiNum = constraint.mode === 2 ? 2 : 1;
+    axisLocal.push('dFi' + fiNum + '_' + constraint.elements[0].id + '_' + constraint.elements[0].type)
+
+    const localToGlobal = new Array(dim);
+    for (let i = 0; i < dim; i++) {
+        localToGlobal[i] = axisGlobal.indexOf(axisLocal[i]);
+    }
+
+    const JacobianLocal = new Array(dim);
+    const F_Local = new Array(dim);
+    for (let i = 0; i < dim; i++) {
+        F_Local[i] = 0;
+        JacobianLocal[i] = new Array(dim);
+        for (let j = 0; j < dim; j++) {
+            JacobianLocal[i][j] = 0;
+        }
+    }
+
+    const arc = constraint.elements[0];
+    let fi;
+    switch (constraint.mode) {
+        case 1:
+            fi = arc.fi1;
+            break;
+        case 2:
+            fi = arc.fi2;
+            break;
+        default:
+            fi = arc.fi1;
+            break;
+    }
+
+    if (arc.angleMode && arc.angleMode == 'DEG') {
+        fi *= Math.PI / 180;
+    }
+  
+    const line = constraint.lines[0];
+    
+    const xs = line[0].x;
+    const ys = line[0].y;
+    const xf = line[1].x;
+    const yf = line[1].y
+
+    const lambda = unknowns[localToGlobal[0]];
+    const dxs = unknowns[localToGlobal[1]];
+    const dys = unknowns[localToGlobal[2]];
+    const dxf = unknowns[localToGlobal[3]];
+    const dyf = unknowns[localToGlobal[4]];
+    const dFi = unknowns[localToGlobal[5]];
+
+    const sinFi = Math.sin(fi+dFi);
+    const cosFi = Math.cos(fi+dFi);
+
+    const a_ = -1 * cosFi;
+    const b_ = -1 * sinFi;
+    const c_ = cosFi;
+    const d_ = sinFi;
+    const e_ = (xf + dxf - xs - dxs)*-1*sinFi + (yf + dyf - ys - dys) * cosFi;
+
+    F_Local[0] = (xf + dxf -xs - dxs) * cosFi + (yf + dyf - ys - dys)*sinFi;
+    F_Local[1] = lambda * a_;
+    F_Local[2] = lambda * b_;
+    F_Local[3] = lambda * c_;
+    F_Local[4] = lambda * d_;
+    F_Local[5] = lambda * e_;
+
+    JacobianLocal[0][1] = a_;
+    JacobianLocal[0][2] = b_;
+    JacobianLocal[0][3] = c_;
+    JacobianLocal[0][4] = d_;
+    JacobianLocal[0][5] = e_;
+
+    JacobianLocal[1][0] = a_;
+    JacobianLocal[1][5] = lambda * sinFi;
+    
+    JacobianLocal[2][0] = b_;
+    JacobianLocal[2][5] = -lambda * cosFi;
+    
+    JacobianLocal[3][0] = c_;
+    JacobianLocal[3][5] = -lambda * sinFi;
+
+    JacobianLocal[4][0] = d_;
+    JacobianLocal[4][5] = lambda * cosFi;
+
+    JacobianLocal[5][0] = e_;
+    JacobianLocal[5][1] = lambda * sinFi;
+    JacobianLocal[5][2] = -lambda * cosFi;
+    JacobianLocal[5][3] = -lambda * sinFi;
+    JacobianLocal[5][4] = lambda * cosFi;
+    JacobianLocal[5][5] = lambda * ((xf + dxf - xs - dxs)*cosFi - (yf + dyf - ys - dys)*sinFi);
+
+    return({axisLocal, JacobianLocal, F_Local, dim, localToGlobal});
+}
 
 export {
     getDerivativeFunction_Horizontal,
@@ -1697,4 +1806,5 @@ export {
     getDerivativeFunction_ArcTangentToLine,
     getDerivativeFunction_ArcPointCoincident,
     getDerivativeFunction_ArcPointFix,
+    getDerivativeFunction_ArcLinePerpendicular,
 };

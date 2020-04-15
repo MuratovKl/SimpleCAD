@@ -19,6 +19,7 @@ import {
     getDerivativeFunction_ArcTangentToLine,
     getDerivativeFunction_ArcPointCoincident,
     getDerivativeFunction_ArcPointFix,
+    getDerivativeFunction_ArcLinePerpendicular,
 } from './constraintFunctions.js';
 import { ConstraintsTypes } from '../ConstraintsTypes.js';
 
@@ -323,6 +324,9 @@ class Kernel {
                 case ConstraintsTypes.ARC_POINT_FIX:
                     constraintFunction = getDerivativeFunction_ArcPointFix(constraint, unknowns, globalAxis);
                     break;
+                case ConstraintsTypes.ARC_LINE_PERPENDICULAR:
+                    constraintFunction = getDerivativeFunction_ArcLinePerpendicular(constraint, unknowns, globalAxis);
+                    break;
 
                 default:
                     break;
@@ -480,6 +484,13 @@ class Kernel {
                                 elementUsedInConstraints.dFi1 = true
                             }
                             break;
+                        case ConstraintsTypes.ARC_LINE_PERPENDICULAR:
+                            if (constraint.mode === 2) {
+                                elementUsedInConstraints.dFi2 = true;
+                            } else {
+                                elementUsedInConstraints.dFi1 = true
+                            }
+                            break;
                     }
                 }
 
@@ -573,6 +584,10 @@ class Kernel {
                                 pointUsedInConstraints.dy = true;
                                 break;
                             case ConstraintsTypes.DISTANCE_POINT_LINE:
+                                pointUsedInConstraints.dx = true;
+                                pointUsedInConstraints.dy = true;
+                                break;
+                            case ConstraintsTypes.ARC_LINE_PERPENDICULAR:
                                 pointUsedInConstraints.dx = true;
                                 pointUsedInConstraints.dy = true;
                                 break;

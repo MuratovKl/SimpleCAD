@@ -251,6 +251,16 @@
               Расстояние между точкой и прямой
             </button>
           </li>
+          <li class="instruments-list__el">
+            <button
+              @click="selectInstrument"
+              data-number="25"
+              class="instrument-btn"
+              :class="{ 'instrument-btn_active': selectedInstrument === 25}"
+            >
+              Перпендикулярность прямой к дуге в точке
+            </button>
+          </li>
         </ul>
       </div>
     </div>
@@ -264,6 +274,7 @@ import { Kernel } from '../../Kernel/Kernel';
 import { Point } from '../../Point';
 import { Constraint } from '../../Constraint';
 import { Arc } from '../../Arc';
+import { ConstraintsTypes } from '../../ConstraintsTypes';
 
 export default {
   name: 'app',
@@ -490,6 +501,48 @@ export default {
             }
             this.tmpConstraint.points = [ point.relatedPoint ];
             this.tmpConstraint.value = answer;
+            this.dataLayer.addConstraint(this.tmpConstraint);
+            if (point.relatedConstraints[this.tmpConstraint.type]) {
+              point.relatedConstraints[this.tmpConstraint.type].push(this.tmpConstraint);
+            } else {
+              point.relatedConstraints[this.tmpConstraint.type] = [ this.tmpConstraint ];
+            }
+            this.updateDrawing();
+            this.tmpConstraint = null;
+          }
+        } else if (this.selectedInstrument === 25) {
+          if (!this.tmpConstraint) {
+            let constraint;
+            if (point.relatedArc) {
+              const arc = point.relatedArc;
+              if (point.relatedId == arc.centerPoint.relatedId) {
+                return;
+              }
+
+              const mode = point.relatedId == arc.startPoint.relatedId ? 1 : 2;
+              constraint = new Constraint({ type: ConstraintsTypes.ARC_LINE_PERPENDICULAR, elements: [ arc.relatedArc ], mode });
+            }
+            this.tmpConstraint = constraint;
+            if (point.relatedConstraints[constraint.type]) {
+              point.relatedConstraints[constraint.type].push(constraint);
+            } else {
+              point.relatedConstraints[constraint.type] = [ constraint ];
+            }
+          } else {
+            if (point.relatedArc) {
+              const arc = point.relatedArc;
+              if (point.relatedId == arc.centerPoint.relatedId) {
+                this.tmpConstraint = null;
+                return;
+              }
+              if (this.tmpConstraint.elements) {
+                this.tmpConstraint.points = [ point.relatedPoint ];
+              } else {
+                this.tmpConstraint.elements = [ point.relatedArc.relatedArc ];
+                const mode = point.relatedId == arc.startPoint.relatedId ? 1 : 2;
+                this.tmpConstraint.mode = mode;
+              }
+            }
             this.dataLayer.addConstraint(this.tmpConstraint);
             if (point.relatedConstraints[this.tmpConstraint.type]) {
               point.relatedConstraints[this.tmpConstraint.type].push(this.tmpConstraint);
@@ -969,6 +1022,30 @@ export default {
             }
             this.tmpConstraint.lines = [[ line.startPoint.relatedPoint, line.endPoint.relatedPoint ]];
             this.tmpConstraint.value = answer;
+            this.dataLayer.addConstraint(this.tmpConstraint);
+            if (line.relatedConstraints[this.tmpConstraint.type]) {
+              line.relatedConstraints[this.tmpConstraint.type].push(this.tmpConstraint);
+            } else {
+              line.relatedConstraints[this.tmpConstraint.type] = [ this.tmpConstraint ];
+            }
+            this.updateDrawing();
+            this.tmpConstraint = null;
+          }
+        } else if (this.selectedInstrument === 25) {
+          if (!this.tmpConstraint) {
+            const constraint = new Constraint({ type: ConstraintsTypes.ARC_LINE_PERPENDICULAR, lines: [[ line.startPoint.relatedPoint, line.endPoint.relatedPoint ]] });
+            this.tmpConstraint = constraint;
+            if (line.relatedConstraints[constraint.type]) {
+              line.relatedConstraints[constraint.type].push(constraint);
+            } else {
+              line.relatedConstraints[constraint.type] = [ constraint ];
+            }
+          } else {
+            if (this.tmpConstraint.lines) {
+              this.tmpConstraint = null;
+              return;
+            }
+            this.tmpConstraint.lines = [[ line.startPoint.relatedPoint, line.endPoint.relatedPoint ]];
             this.dataLayer.addConstraint(this.tmpConstraint);
             if (line.relatedConstraints[this.tmpConstraint.type]) {
               line.relatedConstraints[this.tmpConstraint.type].push(this.tmpConstraint);
