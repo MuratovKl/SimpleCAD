@@ -57,19 +57,41 @@ class Kernel {
             throw e;
         }
 
-        this._assignDeltasToPointsAndElems(deltas, points, elements, axisGlobal);
+        if (this._isResultCorrect(deltas, axisGlobal, elements)) {
+            this._assignDeltasToPointsAndElems(deltas, points, elements, axisGlobal);
+            return { status: "OK" };
+        } else {
+            return { status: "Error" };
+        }
 
-        return { status: "OK" };
     }
 
-    _assignDeltasToPointsAndElems(deltas, points, elements, axisGlobal) {
-        let name;
-        let idStr;
-        let type;
+    _isResultCorrect(deltas, axisGlobal, elements) {
         for (let i = 0; i < axisGlobal.length; i++) {
             if (isNaN(deltas[i])) {
                 throw Error("NaN: " + axisGlobal[i])
             }
+
+            if (axisGlobal[i].startsWith("dR")) {
+                let name, idStr, type, idx;
+                [name, idStr, type] = axisGlobal[i].split('_'); // dx_1, dFi1_2_ARC etc.
+                idx = elements.findIndex(elem => {
+                    let id = Number.parseInt(idStr);
+                    return (elem.id === id) && (elem.type === type);
+                })
+                if (idx != -1) {
+                    if (!(elements[idx].R + deltas[i] > 0)) {
+                        throw Error("new radius <= 0");
+                    }
+                }
+            }
+        }
+        return true;
+    }
+
+    _assignDeltasToPointsAndElems(deltas, points, elements, axisGlobal) {
+        let name, idStr, type;
+        for (let i = 0; i < axisGlobal.length; i++) {
             [name, idStr, type] = axisGlobal[i].split('_'); // dx_1, dFi1_2_ARC etc.
             if (!isNaN(idStr) && name) {
                 let idx;
@@ -98,9 +120,6 @@ class Kernel {
                             return (elem.id === id) && (elem.type === type);
                         })
                         if (idx != -1) {
-                            if (!(elements[idx].R + deltas[i] > 0)) {
-                                throw Error("new radius <= 0");
-                            }
                             elements[idx].R += deltas[i]
                         }
                         break;
