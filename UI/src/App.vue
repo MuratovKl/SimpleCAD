@@ -421,6 +421,7 @@ export default {
               }
 
               const mode = point.relatedId == arc.startPoint.relatedId ? 1 : 2;
+              console.log(`const mode ${mode}`);
               constraint = new Constraint({ type: 'ARC_POINT_COINCIDENT', elements: [ arc.relatedArc ], mode });
             } else {
               constraint = new Constraint({ type: 'ARC_POINT_COINCIDENT', points: [ point.relatedPoint ] });
@@ -433,18 +434,19 @@ export default {
             }
           } else {
             if (point.relatedArc) {
+              if (this.tmpConstraint.elements) {
+                this.tmpConstraint = null;
+                return;
+              }
               const arc = point.relatedArc;
               if (point.relatedId == arc.centerPoint.relatedId) {
                 this.tmpConstraint = null;
                 return;
               }
-              if (this.tmpConstraint.elements) {
-                this.tmpConstraint.points = [ point.relatedPoint ];
-              } else {
-                this.tmpConstraint.elements = [ point.relatedArc.relatedArc ];
-                const mode = point.relatedId == arc.startPoint.relatedId ? 1 : 2;
-                this.tmpConstraint.mode = mode;
-              }
+              this.tmpConstraint.elements = [ point.relatedArc.relatedArc ];
+              const mode = point.relatedId == arc.startPoint.relatedId ? 1 : 2;
+              console.log(`constraint mode ${mode}`);
+              this.tmpConstraint.mode = mode;
             } else {
               if (this.tmpConstraint.points) {
                 this.tmpConstraint = null;
@@ -467,7 +469,7 @@ export default {
             return;
           }
           let mode;
-          if (point.relatedId = point.relatedArc.startPoint.relatedId) {
+          if (point.relatedId == point.relatedArc.startPoint.relatedId) {
             mode = 1;
           } else {
             mode = 2
@@ -662,8 +664,10 @@ export default {
         }
         if (Date.now() - this.prevLineDrag > 5) {
           try {
-            if (this.dataLayer.resolve()) {
-              this.updateDrawing();
+            let { status } = this.dataLayer.resolve();
+            console.log(`resolve status ${status}`);
+            if (status == "OK") {
+              this.updateDrawing()
             }
           } catch (e) {
             console.error(e.message);
@@ -1061,8 +1065,10 @@ export default {
         this.updateLineObject(line);
         if (Date.now() - this.prevLineDrag > 5) {
           try {
-            if (this.dataLayer.resolve()) {
-              this.updateDrawing();
+            let { status } = this.dataLayer.resolve();
+            console.log(`resolve status ${status}`);
+            if (status == "OK") {
+              this.updateDrawing()
             }
           } catch (e) {
             console.error(e.message);
@@ -1171,8 +1177,10 @@ export default {
         this.updateArcObject(arc);
         if (Date.now() - this.prevLineDrag > 5) {
           try {
-            if (this.dataLayer.resolve()) {
-              this.updateDrawing();
+            let { status } = this.dataLayer.resolve();
+            console.log(`resolve status ${status}`);
+            if (status == "OK") {
+              this.updateDrawing()
             }
           } catch (e) {
             console.error(e.message);
