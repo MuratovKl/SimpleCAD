@@ -74,21 +74,31 @@
           <li class="instruments-list__el">
             <button
               @click="selectInstrument"
-              data-number="6"
-              class="instrument-btn"
-              :class="{ 'instrument-btn_active': selectedInstrument === 6}"
-            >
-              Расстояние между 2 точками
-            </button>
-          </li>
-          <li class="instruments-list__el">
-            <button
-              @click="selectInstrument"
               data-number="7"
               class="instrument-btn"
               :class="{ 'instrument-btn_active': selectedInstrument === 7}"
             >
               Вертикальность
+            </button>
+          </li>
+          <li class="instruments-list__el">
+            <button
+              @click="selectInstrument"
+              data-number="6"
+              class="instrument-btn"
+              :class="{ 'instrument-btn_active': selectedInstrument === 6}"
+            >
+              Расстояние между точками / длина прямой
+            </button>
+          </li>
+          <li class="instruments-list__el">
+            <button
+              @click="selectInstrument"
+              data-number="24"
+              class="instrument-btn"
+              :class="{ 'instrument-btn_active': selectedInstrument === 24}"
+            >
+              Расстояние между точкой и прямой
             </button>
           </li>
           <li class="instruments-list__el">
@@ -124,16 +134,6 @@
           <li class="instruments-list__el">
             <button
               @click="selectInstrument"
-              data-number="11"
-              class="instrument-btn"
-              :class="{ 'instrument-btn_active': selectedInstrument === 11}"
-            >
-              Угол между линиями
-            </button>
-          </li>
-          <li class="instruments-list__el">
-            <button
-              @click="selectInstrument"
               data-number="12"
               class="instrument-btn"
               :class="{ 'instrument-btn_active': selectedInstrument === 12}"
@@ -144,11 +144,31 @@
           <li class="instruments-list__el">
             <button
               @click="selectInstrument"
+              data-number="11"
+              class="instrument-btn"
+              :class="{ 'instrument-btn_active': selectedInstrument === 11}"
+            >
+              Угол между линиями
+            </button>
+          </li>
+          <li class="instruments-list__el">
+            <button
+              @click="selectInstrument"
               data-number="13"
               class="instrument-btn"
               :class="{ 'instrument-btn_active': selectedInstrument === 13}"
             >
               Точка на прямой
+            </button>
+          </li>
+          <li class="instruments-list__el">
+            <button
+              @click="selectInstrument"
+              data-number="23"
+              class="instrument-btn"
+              :class="{ 'instrument-btn_active': selectedInstrument === 23}"
+            >
+              Равная длина прямых
             </button>
           </li>
           <li class="instruments-list__el">
@@ -184,6 +204,26 @@
           <li class="instruments-list__el">
             <button
               @click="selectInstrument"
+              data-number="25"
+              class="instrument-btn"
+              :class="{ 'instrument-btn_active': selectedInstrument === 25}"
+            >
+              Перпендикулярность прямой к дуге в точке
+            </button>
+          </li>
+          <li class="instruments-list__el">
+            <button
+              @click="selectInstrument"
+              data-number="21"
+              class="instrument-btn"
+              :class="{ 'instrument-btn_active': selectedInstrument === 21}"
+            >
+              Совмещение точки и конца дуги
+            </button>
+          </li>
+          <li class="instruments-list__el">
+            <button
+              @click="selectInstrument"
               data-number="18"
               class="instrument-btn"
               :class="{ 'instrument-btn_active': selectedInstrument === 18}"
@@ -214,51 +254,11 @@
           <li class="instruments-list__el">
             <button
               @click="selectInstrument"
-              data-number="21"
-              class="instrument-btn"
-              :class="{ 'instrument-btn_active': selectedInstrument === 21}"
-            >
-              Совмещение точки и конца дуги
-            </button>
-          </li>
-          <li class="instruments-list__el">
-            <button
-              @click="selectInstrument"
               data-number="22"
               class="instrument-btn"
               :class="{ 'instrument-btn_active': selectedInstrument === 22}"
             >
               Фиксация конца дуги
-            </button>
-          </li>
-          <li class="instruments-list__el">
-            <button
-              @click="selectInstrument"
-              data-number="23"
-              class="instrument-btn"
-              :class="{ 'instrument-btn_active': selectedInstrument === 23}"
-            >
-              Равная длина прямых
-            </button>
-          </li>
-          <li class="instruments-list__el">
-            <button
-              @click="selectInstrument"
-              data-number="24"
-              class="instrument-btn"
-              :class="{ 'instrument-btn_active': selectedInstrument === 24}"
-            >
-              Расстояние между точкой и прямой
-            </button>
-          </li>
-          <li class="instruments-list__el">
-            <button
-              @click="selectInstrument"
-              data-number="25"
-              class="instrument-btn"
-              :class="{ 'instrument-btn_active': selectedInstrument === 25}"
-            >
-              Перпендикулярность прямой к дуге в точке
             </button>
           </li>
         </ul>
@@ -275,6 +275,8 @@ import { Point } from '../../Point';
 import { Constraint } from '../../Constraint';
 import { Arc } from '../../Arc';
 import { ConstraintsTypes } from '../../ConstraintsTypes';
+
+const frameTime = 1; // ms
 
 export default {
   name: 'app',
@@ -662,7 +664,7 @@ export default {
           relatedPoint.x = point.x();
           relatedPoint.y = point.y();
         }
-        if (Date.now() - this.prevLineDrag > 5) {
+        if (Date.now() - this.prevLineDrag > frameTime) {
           try {
             let { status } = this.dataLayer.resolve();
             console.log(`resolve status ${status}`);
@@ -676,20 +678,20 @@ export default {
         }
       });
 
-      point.on('dragstart', () => {
-        if (!point.relatedConstraints['FIX_POINT'] && !point.relatedArc) {
-          const tmpConstraint = new Constraint({ type: 'FIX_POINT', points: [point.relatedPoint] });
-          this.tmpConstraintId = tmpConstraint.id;
-          this.dataLayer.addTmpConstraint(tmpConstraint);
-        }
-      });
+      // point.on('dragstart', () => {
+      //   if (!point.relatedConstraints['FIX_POINT'] && !point.relatedArc) {
+      //     const tmpConstraint = new Constraint({ type: 'FIX_POINT', points: [point.relatedPoint] });
+      //     this.tmpConstraintId = tmpConstraint.id;
+      //     this.dataLayer.addTmpConstraint(tmpConstraint);
+      //   }
+      // });
 
-      point.on('dragend', () => {
-        if (this.tmpConstraintId) {
-          this.dataLayer.removeConstraint(this.tmpConstraintId);
-          this.tmpConstraintId = null;
-        }
-      });
+      // point.on('dragend', () => {
+      //   if (this.tmpConstraintId) {
+      //     this.dataLayer.removeConstraint(this.tmpConstraintId);
+      //     this.tmpConstraintId = null;
+      //   }
+      // });
 
       point.on('mouseenter', () => {
         if (point.draggable()) {
@@ -753,7 +755,7 @@ export default {
       arc.rotation(fi1)
       arc.angle(fi2 - fi1);
       arc.innerRadius(R)
-      arc.outerRadius(R + 5);
+      arc.outerRadius(R + 3);
 
       centerPoint.x(center.x);
       centerPoint.y(center.y);
@@ -866,6 +868,20 @@ export default {
           this.dataLayer.addConstraint(constraint);
           this.updateDrawing();
           // this.updateLinePos(line);
+        } else if (this.selectedInstrument === 6) {
+          const answer = parseFloat(prompt('Введите расстояние:'));
+          if (isNaN(answer)) {
+            alert('Введено неверное значение расстояния');
+            this.tmpConstraint.points[0].relatedConstraints['LENGTH'].pop();
+            this.tmpConstraint = null;
+            return;
+          }
+          const points = [line.startPoint.relatedPoint, line.endPoint.relatedPoint];
+          console.log('Line Handler Length');
+          const constraint = new Constraint({ type: 'LENGTH', points, value: answer });
+          line.relatedConstraints[constraint.type] = [ constraint ];
+          this.dataLayer.addConstraint(constraint);
+          this.updateDrawing();
         } else if (this.selectedInstrument === 7 && !('VERTICAL' in line.relatedConstraints)) {
           const points = [line.startPoint.relatedPoint, line.endPoint.relatedPoint];
           console.log('Line Handler Vertical');
@@ -1063,7 +1079,7 @@ export default {
       });
       line.on('dragmove', () => {
         this.updateLineObject(line);
-        if (Date.now() - this.prevLineDrag > 5) {
+        if (Date.now() - this.prevLineDrag > frameTime) {
           try {
             let { status } = this.dataLayer.resolve();
             console.log(`resolve status ${status}`);
@@ -1175,7 +1191,7 @@ export default {
       });
       arc.on('dragmove', () => {
         this.updateArcObject(arc);
-        if (Date.now() - this.prevLineDrag > 5) {
+        if (Date.now() - this.prevLineDrag > frameTime) {
           try {
             let { status } = this.dataLayer.resolve();
             console.log(`resolve status ${status}`);
@@ -1189,12 +1205,12 @@ export default {
         }
       });
       arc.on('mouseenter', () => {
-        arc.outerRadius(arc.outerRadius() + 2);
+        arc.outerRadius(arc.innerRadius() + 5);
         arc.fill('green');
         this.layer.draw();
       });
       arc.on('mouseleave', () => {
-        arc.outerRadius(arc.outerRadius() - 2);
+        arc.outerRadius(arc.innerRadius() + 3);
         arc.fill('#244CE5');
         this.layer.draw();
       });
