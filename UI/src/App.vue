@@ -271,9 +271,9 @@
 import Konva from 'konva';
 import { DataLayer } from '../../DataLayer/DataLayer';
 import { Kernel } from '../../Kernel/Kernel';
-import { Point } from '../../Point';
+import { Point } from '../../elements/Point';
 import { Constraint } from '../../Constraint';
-import { Arc } from '../../Arc';
+import { Arc } from '../../elements/Arc';
 import { ConstraintsTypes } from '../../ConstraintsTypes';
 
 const frameTime = 1; // ms

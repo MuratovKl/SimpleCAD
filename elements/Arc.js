@@ -1,3 +1,5 @@
+import { ElementTypes } from './ElementTypes.js';
+
 class Arc {
   static curId = 0;
 
@@ -11,7 +13,7 @@ class Arc {
   }
 
   get type() {
-    return "ARC";
+    return ElementTypes.ARC;
   }
   get center() {
     return this._center;
