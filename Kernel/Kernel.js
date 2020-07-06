@@ -31,7 +31,7 @@ import { ElementTypes } from '../elements/ElementTypes.js';
  */
 class Kernel {
     static _NewtonMaxIterations = 1500;
-    static _NewtonTolerance = 1e-2;
+    static _NewtonTolerance = 1e-8;
     /**
      * main method of Kernel for solving
      * 

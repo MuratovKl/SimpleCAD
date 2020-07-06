@@ -1,4 +1,4 @@
-export const ConstraintsTypes = {
+const ConstraintsTypes = {
   'HORIZONTAL': 'HORIZONTAL',
   'LENGTH': 'LENGTH',
   'VERTICAL': 'VERTICAL',
@@ -20,3 +20,7 @@ export const ConstraintsTypes = {
   'ARC_LINE_PERPENDICULAR': 'ARC_LINE_PERPENDICULAR',
   'LENGTH_TOTAL': 'LENGTH_TOTAL'
 };
+
+Object.freeze(ConstraintsTypes);
+
+export { ConstraintsTypes };

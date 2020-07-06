@@ -246,6 +246,4 @@ function getDerivativeFunction_LengthTotal(constraint, unknowns, axisGlobal) {
     return({axisLocal, JacobianLocal, F_Local, dim, localToGlobal});
 }
 
-export {
-    getDerivativeFunction_LengthTotal
-}
+export { getDerivativeFunction_LengthTotal };
