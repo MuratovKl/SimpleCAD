@@ -21,6 +21,7 @@
 |ARC_TANGENT_ToLine| Касание дуги и прямой
 |ARC_POINT_COINCIDENT | Совмещение точки и конца дуги (1-начальная т., 2-конечная т.)
 |ARC_POINT_FIX | Фиксация конца дуги (1-начальная т., 2-конечная)
+|LENGTH_TOTAL | Длина кривой, кривой, состоящей из нескольких участков (отрезков/дуг)
 
 Example:
 ```javascript
@@ -47,6 +48,9 @@ Example:
     Constraint({type: ConstraintsTypes.ARC_TANGENT_ToLine, elements:[arc1], lines: [[point3, point2]]});
     Constraint({type: ConstraintsTypes.ARC_POINT_COINCIDENT, elements:[arc1], points: [point2], mode: 1}); // mode: 1|2
     Constraint({type: ConstraintsTypes.ARC_POINT_FIX, elements:[arc1], mode: 1}); // mode: 1|2
+
+    //  Сomplex
+    Constraint({type: ConstraintsTypes.LENGTH_TOTAL, elements: [line1, arc1, line2], value: 250})
 ```
 
 
@@ -56,5 +60,5 @@ Using the `KERNEL`:
 kernel.solve(points, elements, constraints);
 ```
 ```typescript
-Kernel.solve(points: Array<Point>, elements: Array<Arc>, constraints: Array<Constraint>) {...}
+Kernel.solve(points: Array<Point>, elements: Array<Arc | Line>, constraints: Array<Constraint>) {...}
 ```

@@ -20,8 +20,10 @@ import {
     getDerivativeFunction_ArcPointCoincident,
     getDerivativeFunction_ArcPointFix,
     getDerivativeFunction_ArcLinePerpendicular,
-} from './constraintFunctions.js';
+} from './constraintFunctions/ConstraintFunctions.js';
+import { getDerivativeFunction_LengthTotal } from './constraintFunctions/LengthTotal.js';
 import { ConstraintsTypes } from '../ConstraintsTypes.js';
+import { ElementTypes } from '../elements/ElementTypes.js';
 
 
 /**
@@ -29,7 +31,7 @@ import { ConstraintsTypes } from '../ConstraintsTypes.js';
  */
 class Kernel {
     static _NewtonMaxIterations = 1500;
-    static _NewtonTolerance = 1e-8;
+    static _NewtonTolerance = 1e-2;
     /**
      * main method of Kernel for solving
      * 
@@ -40,6 +42,10 @@ class Kernel {
      * @param {Array<Constraint>} constraints constraints
      */
     solve(points, elements, constraints) {
+        this._solve(points, elements, constraints)
+    }
+
+    _solve(points, elements, constraints) {
         if (constraints.length === 0) {
             return null;
         }
@@ -49,7 +55,6 @@ class Kernel {
         this._elementsUsedInConstraints(elementsUsedInConstraints, pointsUsedInConstraints, constraints);
         const axisGlobal = [];
         this._fillAxisGlobalArray(axisGlobal, pointsUsedInConstraints, elementsUsedInConstraints, constraints);
-
         let deltas
         try {
             deltas = this._NewtonMethod(axisGlobal, constraints, Kernel._NewtonMaxIterations, Kernel._NewtonTolerance);
@@ -353,6 +358,9 @@ class Kernel {
                 case ConstraintsTypes.ARC_LINE_PERPENDICULAR:
                     constraintFunction = getDerivativeFunction_ArcLinePerpendicular(constraint, unknowns, globalAxis);
                     break;
+                case ConstraintsTypes.LENGTH_TOTAL:
+                    constraintFunction = getDerivativeFunction_LengthTotal(constraint, unknowns, globalAxis);
+                    break;
 
                 default:
                     break;
@@ -470,7 +478,8 @@ class Kernel {
             const elementsInConstraint = constraint.elements;
             if (elementsInConstraint) {
                 for (let element of elementsInConstraint) {
-                    let elementUsedInConstraints = elementsUsedInConstraints.find(elem => (elem.id == element.id) && (elem.type == element.type));
+                    let elementUsedInConstraints = elementsUsedInConstraints.find(
+                        elem => (elem.id == element.id) && (elem.type == element.type));
                     if (!elementUsedInConstraints) {
                         elementUsedInConstraints = new ElementUsedInConstraints(element.type, element.id);
                         elementsUsedInConstraints.push(elementUsedInConstraints);
@@ -517,6 +526,13 @@ class Kernel {
                                 elementUsedInConstraints.dFi1 = true
                             }
                             break;
+                        case ConstraintsTypes.LENGTH_TOTAL:
+                            if (elementUsedInConstraints.type == ElementTypes.ARC) {
+                                elementUsedInConstraints.dFi1 = true;
+                                elementUsedInConstraints.dFi2 = true;
+                                elementUsedInConstraints.dR = true;
+                            }
+                            break;
                     }
                 }
 
@@ -535,6 +551,14 @@ class Kernel {
                         break;
                     case ConstraintsTypes.ARC_POINT_FIX:
                         pointsInConstraint.push(constraint.elements[0].center);
+                        break;
+                    case ConstraintsTypes.LENGTH_TOTAL:
+                        for (const element of elementsInConstraint) {
+                            if (element.type == ElementTypes.LINE) {
+                                pointsInConstraint.push(element.p1);
+                                pointsInConstraint.push(element.p2);
+                            }
+                        }
                         break;
                 }
                 for (let point of pointsInConstraint) {
@@ -557,6 +581,10 @@ class Kernel {
                             pointUsedInConstraints.dy = true;
                             break;
                         case ConstraintsTypes.ARC_POINT_FIX:
+                            pointUsedInConstraints.dx = true;
+                            pointUsedInConstraints.dy = true;
+                            break;
+                        case ConstraintsTypes.LENGTH_TOTAL:
                             pointUsedInConstraints.dx = true;
                             pointUsedInConstraints.dy = true;
                             break;
