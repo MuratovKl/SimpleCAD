@@ -261,6 +261,16 @@
               Фиксация конца дуги
             </button>
           </li>
+          <li class="instruments-list__el">
+            <button
+              @click="selectInstrument"
+              data-number="26"
+              class="instrument-btn"
+              :class="{ 'instrument-btn_active': selectedInstrument === 26}"
+            >
+              Длина кривой, состоящей из нескольких участков (отрезков/дуг)
+            </button>
+          </li>
         </ul>
       </div>
     </div>
@@ -274,6 +284,7 @@ import { Kernel } from '../../Kernel/Kernel';
 import { Point } from '../../elements/Point';
 import { Constraint } from '../../Constraint';
 import { Arc } from '../../elements/Arc';
+import { Line } from '../../elements/Line';
 import { ConstraintsTypes } from '../../ConstraintsTypes';
 
 const frameTime = 1; // ms
@@ -310,6 +321,22 @@ export default {
     this.kernel = new Kernel();
     console.log(this.kernel);
     this.dataLayer = new DataLayer(this.kernel);
+
+    // hey event for LENGTH_TOTAL constraint
+    document.addEventListener('keydown', (event) => {
+      if (event.keyCode === 13) {
+        console.log('enter pressed');
+        const answer = parseFloat(prompt('Введите длину:'));
+        if (isNaN(answer)) {
+          // TODO: handle bad answer
+          return;
+        }
+        this.tmpConstraint.value = answer
+        this.dataLayer.addConstraint(this.tmpConstraint);
+        this.updateDrawing();
+        this.tmpConstraint = null;
+      }
+    });
   },
   methods: {
     selectInstrument(event) {
@@ -1075,6 +1102,25 @@ export default {
             this.updateDrawing();
             this.tmpConstraint = null;
           }
+        } else if (this.selectedInstrument === 26) {
+          if (!this.tmpConstraint) {
+            const newLine = new Line(line.startPoint.relatedPoint, line.endPoint.relatedPoint)
+            const constraint = new Constraint({ type: ConstraintsTypes.LENGTH_TOTAL, elements: [ newLine ] });
+            this.tmpConstraint = constraint;
+            if (line.relatedConstraints[constraint.type]) {
+              line.relatedConstraints[constraint.type].push(constraint);
+            } else {
+              line.relatedConstraints[constraint.type] = [ constraint ];
+            }
+          } else {
+            const newLine = new Line(line.startPoint.relatedPoint, line.endPoint.relatedPoint)
+            this.tmpConstraint.elements.push(newLine)
+            if (line.relatedConstraints[this.tmpConstraint.type]) {
+              line.relatedConstraints[this.tmpConstraint.type].push(this.tmpConstraint);
+            } else {
+              line.relatedConstraints[this.tmpConstraint.type] = [ this.tmpConstraint ];
+            }
+          }
         }
       });
       line.on('dragmove', () => {
@@ -1186,6 +1232,23 @@ export default {
             }
             this.updateDrawing();
             this.tmpConstraint = null;
+          }
+        } else if (this.selectedInstrument === 26) {
+          if (!this.tmpConstraint) {
+            const constraint = new Constraint({ type: ConstraintsTypes.LENGTH_TOTAL, elements: [ arc.relatedArc ] });
+            this.tmpConstraint = constraint;
+            if (arc.relatedConstraints[constraint.type]) {
+              arc.relatedConstraints[constraint.type].push(constraint);
+            } else {
+              arc.relatedConstraints[constraint.type] = [ constraint ];
+            }
+          } else {
+            this.tmpConstraint.elements.push(arc.relatedArc)
+            if (arc.relatedConstraints[this.tmpConstraint.type]) {
+              arc.relatedConstraints[this.tmpConstraint.type].push(this.tmpConstraint);
+            } else {
+              arc.relatedConstraints[this.tmpConstraint.type] = [ this.tmpConstraint ];
+            }
           }
         }
       });
