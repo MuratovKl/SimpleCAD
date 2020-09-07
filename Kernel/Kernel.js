@@ -42,7 +42,7 @@ class Kernel {
      * @param {Array<Constraint>} constraints constraints
      */
     solve(points, elements, constraints) {
-        this._solve(points, elements, constraints)
+        return this._solve(points, elements, constraints)
     }
 
     _solve(points, elements, constraints) {
@@ -68,7 +68,6 @@ class Kernel {
         } else {
             return { status: "Error" };
         }
-
     }
 
     _isResultCorrect(deltas, axisGlobal, elements) {
