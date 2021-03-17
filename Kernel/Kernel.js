@@ -57,7 +57,7 @@ class Kernel {
         this._fillAxisGlobalArray(axisGlobal, pointsUsedInConstraints, elementsUsedInConstraints, constraints);
         let deltas
         try {
-            deltas = this._NewtonMethod(axisGlobal, constraints, Kernel._NewtonMaxIterations, Kernel._NewtonTolerance);
+            deltas = this._NewtonMethod(axisGlobal, constraints, Kernel._NewtonMaxIterations, Kernel._NewtonTolerance, elements);
         } catch (e) {
             throw e;
         }
@@ -162,7 +162,7 @@ class Kernel {
         }
     }
 
-    _NewtonMethod(axisGlobal, constraints, maxK, epsilon) {
+    _NewtonMethod(axisGlobal, constraints, maxK, epsilon, elements) {
         let k = 0;
         let S = epsilon + 1;
         
@@ -184,7 +184,7 @@ class Kernel {
             this._fill2dArrayWithNumber(Jacobian, arraySize, arraySize, 0);
             this._fillVectorWithNumber(F, arraySize, 0);
 
-            this._fillJacobianAndFbyConstraints(Jacobian, F, axisGlobal, constraints, X);
+            this._fillJacobianAndFbyConstraints(Jacobian, F, axisGlobal, constraints, X, elements);
 
             // F = -F   (J*dX = -F)
             for (let i = 0; i < F.length; i++) {
@@ -296,7 +296,7 @@ class Kernel {
         return X;
     }
 
-    _fillJacobianAndFbyConstraints(Jacobian, F, globalAxis, constraints, unknowns) {
+    _fillJacobianAndFbyConstraints(Jacobian, F, globalAxis, constraints, unknowns, elements) {
         for (let constraint of constraints) {
             let constraintFunction;
             switch (constraint.type) {
@@ -374,11 +374,39 @@ class Kernel {
 
         // add +1 for diagonal elements in Jacobian (without lambda)
         for (let k = startDXorDY; k < globalAxis.length; k++) {
-            Jacobian[k][k] += 1;
+            const splitValues = globalAxis[k].split('_');
+            // dFi1_4_ARC
+            if (splitValues.length === 3 && splitValues[2] === ElementTypes.ARC && splitValues[0].startsWith('dFi')) {
+                const currentArcId = Number.parseInt(splitValues[1]);
+                let currentArcRadius = 1;
+                if (!Number.isNaN(currentArcId)) {
+                    const currentArc = elements.find(elem => (elem.id == currentArcId) && (elem.type == ElementTypes.ARC));
+                    if (currentArc != undefined) {
+                        currentArcRadius = currentArc.R;
+                    }
+                }
+                Jacobian[k][k] += currentArcRadius * currentArcRadius;
+            } else {
+                Jacobian[k][k] += 1;
+            }
         }
+
         // add +dx_i and +dy_i in F[i]
         for (let k = startDXorDY; k < globalAxis.length; k++) {
-            F[k] += unknowns[k];
+            const splitValues = globalAxis[k].split('_');
+            if (splitValues.length === 3 && splitValues[2] === ElementTypes.ARC && splitValues[0].startsWith('dFi')) {
+                const currentArcId = Number.parseInt(splitValues[1]);
+                let currentArcRadius = 1;
+                if (!Number.isNaN(currentArcId)) {
+                    const currentArc = elements.find(elem => (elem.id == currentArcId) && (elem.type == ElementTypes.ARC));
+                    if (currentArc != undefined) {
+                        currentArcRadius = currentArc.R;
+                    }
+                }
+                F[k] += unknowns[k] * currentArcRadius * currentArcRadius;
+            } else {
+                F[k] += unknowns[k];
+            }
         }
     }
 
