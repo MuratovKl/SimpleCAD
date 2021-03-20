@@ -299,6 +299,8 @@ import { Line } from '../../elements/Line';
 import { ConstraintsTypes } from '../../ConstraintsTypes';
 
 const frameTime = 1; // ms
+const defaultElementColor = '#244CE5';
+const selectedElementColor = '#ff3838';
 
 export default {
   name: 'app',
@@ -332,6 +334,7 @@ export default {
     this.kernel = new Kernel();
     console.log(this.kernel);
     this.dataLayer = new DataLayer(this.kernel);
+    this.selectedElementList = {lines: [], arcs: []};
 
     // hey event for LENGTH_TOTAL constraint
     document.addEventListener('keydown', (event) => {
@@ -344,6 +347,14 @@ export default {
         }
         this.tmpConstraint.value = answer
         this.dataLayer.addConstraint(this.tmpConstraint);
+        for (const line of this.selectedElementList.lines) {
+          line.stroke(defaultElementColor)
+        }
+        this.selectedElementList.lines = [];
+        for (const arc of this.selectedElementList.arcs) {
+          arc.fill(defaultElementColor)
+        }
+        this.selectedElementList.arcs = [];
         this.updateDrawing();
         this.tmpConstraint = null;
       }
@@ -749,7 +760,7 @@ export default {
           if (point.relatedArc && point.relatedArc.centerPoint == point) {
             point.fill('#ffd500');
           } else {
-            point.fill('#244CE5');
+            point.fill(defaultElementColor);
           }
           this.layer.draw();
         }
@@ -1137,6 +1148,9 @@ export default {
               line.relatedConstraints[this.tmpConstraint.type] = [ this.tmpConstraint ];
             }
           }
+          this.selectedElementList.lines.push(line)
+          line.stroke(selectedElementColor)
+          this.layer.draw();
         } else if (this.selectedInstrument === 27) {
           const startP = line.startPoint;
           const endP = line.endPoint;
@@ -1171,7 +1185,10 @@ export default {
       });
       line.on('mouseleave', () => {
         line.strokeWidth(3);
-        line.stroke('#244CE5');
+        line.stroke(defaultElementColor);
+        for (const lineElement of this.selectedElementList.lines) {
+          lineElement.stroke(selectedElementColor);
+        }
         this.layer.draw();
       });
     },
@@ -1275,6 +1292,9 @@ export default {
               arc.relatedConstraints[this.tmpConstraint.type] = [ this.tmpConstraint ];
             }
           }
+          this.selectedElementList.arcs.push(arc)
+          arc.fill(selectedElementColor)
+          this.layer.draw();
         } else if (this.selectedInstrument === 27) {
           const radius = arc.relatedArc.R;
           const fi1 = arc.relatedArc.fi1;
@@ -1308,7 +1328,10 @@ export default {
       });
       arc.on('mouseleave', () => {
         arc.outerRadius(arc.innerRadius() + 3);
-        arc.fill('#244CE5');
+        arc.fill(defaultElementColor);
+        for (const arcElement of this.selectedElementList.arcs) {
+          arcElement.fill(selectedElementColor);
+        }
         this.layer.draw();
       });
     },
@@ -1374,7 +1397,7 @@ export default {
           this.dataLayer.addPoint(modelPoint);
           const drawingPoint = new Konva.Circle({
             radius: 5,
-            fill: '#244CE5',
+            fill: defaultElementColor,
             x: pointerX,
             y: pointerY,
             draggable: true,
@@ -1395,7 +1418,7 @@ export default {
             this.dataLayer.addPoint(endModelPoint);
             const sP = new Konva.Circle({
               radius: 5,
-              fill: '#244CE5',
+              fill: defaultElementColor,
               x: pointerX,
               y: pointerY,
               draggable: true,
@@ -1407,7 +1430,7 @@ export default {
             this.drawingPoints.push(sP, eP);
             const drawingLine = new Konva.Line({
               points: [startModelPoint.x, startModelPoint.y, endModelPoint.x, endModelPoint.y],
-              stroke: '#244CE5',
+              stroke: defaultElementColor,
               strokeWidth: 3,
               draggable: true,
             });
@@ -1478,7 +1501,7 @@ export default {
             this.dataLayer.addPoint(endModelPoint);
             const eP = new Konva.Circle({
               radius: 5,
-              fill: '#244CE5',
+              fill: defaultElementColor,
               x: pointerX,
               y: pointerY,
               draggable: true,
@@ -1503,8 +1526,8 @@ export default {
               innerRadius: arcRadius,
               outerRadius: arcRadius + 3,
               angle: 0,
-              fill: '#244CE5',
-              stroke: '#244CE5',
+              fill: defaultElementColor,
+              stroke: defaultElementColor,
               strokeWidth: 0,
               rotation: startAngle,
               clockwise: true,
