@@ -28,6 +28,17 @@
           <li class="instruments-list__el">
             <button
               @click="selectInstrument"
+              data-number="27"
+              class="instrument-btn"
+              :class="{ 'instrument-btn_active': selectedInstrument === 27}"
+            >
+              Информация
+            </button>
+          </li>
+          <hr>
+          <li class="instruments-list__el">
+            <button
+              @click="selectInstrument"
               data-number="3"
               class="instrument-btn"
               :class="{ 'instrument-btn_active': selectedInstrument === 3}"
@@ -42,7 +53,7 @@
               class="instrument-btn"
               :class="{ 'instrument-btn_active': selectedInstrument === 4}"
             >
-              Линия
+              Отрезок
             </button>
           </li>
           <li class="instruments-list__el">
@@ -583,6 +594,11 @@ export default {
             this.updateDrawing();
             this.tmpConstraint = null;
           }
+        } else if (this.selectedInstrument === 27) {
+          const pointId = point.relatedId;
+          const pointInfo = this.dataLayer.getPointInfo(pointId);
+          const message = "Point#" + pointId + " (" + pointInfo.x.toFixed(2) + "; " + pointInfo.y.toFixed(2) + ")"
+          alert(message)
         }
       });
       point.on('dragmove', (event) => {
@@ -1121,6 +1137,15 @@ export default {
               line.relatedConstraints[this.tmpConstraint.type] = [ this.tmpConstraint ];
             }
           }
+        } else if (this.selectedInstrument === 27) {
+          const startP = line.startPoint;
+          const endP = line.endPoint;
+          const sPId = startP.relatedId;
+          const ePId = endP.relatedId;
+
+          const distance = this.dataLayer.getPointsDistance(sPId, ePId);
+          const message = "Length is " + distance.toFixed(2);
+          alert(message);
         }
       });
       line.on('dragmove', () => {
@@ -1250,6 +1275,15 @@ export default {
               arc.relatedConstraints[this.tmpConstraint.type] = [ this.tmpConstraint ];
             }
           }
+        } else if (this.selectedInstrument === 27) {
+          const radius = arc.relatedArc.R;
+          const fi1 = arc.relatedArc.fi1;
+          const fi2 = arc.relatedArc.fi2;
+          const angle = Math.max(fi1, fi2) - Math.min(fi1, fi2);
+          const arcLength = radius * (Math.PI * angle /180);
+          const message = "Arc#" + arc.relatedArc.id + ":\nR = " + radius.toFixed(2)+ "\n\nArc length is " + arcLength.toFixed(2)
+                           + "\n\nAngle = " + angle.toFixed(2) + "\n" + "fi1 = " + fi1.toFixed(2) + "\n" + "fi2 = " + fi2.toFixed(2) ;
+          alert(message)
         }
       });
       arc.on('dragmove', () => {

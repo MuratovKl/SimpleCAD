@@ -59,6 +59,18 @@ class DataLayer {
     }
     return result;
   }
+
+  getPointInfo(id) {
+    const point = this._points.find((el) => el.id === id);
+    return {x: point.x, y: point.y}  
+  }
+
+  getPointsDistance(idP1, idP2) {
+    const point1 = this._points.find((el) => el.id === idP1);
+    const point2 = this._points.find((el) => el.id === idP2);
+    const dPow2 = (point2.x - point1.x) ** 2 + (point2.y - point1.y) ** 2
+    return Math.sqrt(dPow2)
+  }
 }
 
 export {
