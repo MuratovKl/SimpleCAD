@@ -37,7 +37,7 @@ class Kernel {
      * 
      * @throws {Error} Will throw if System cannot be solved
      * @param {Array<Point>} points points which should be modified by constraints 
-     * @param {Array<Arc>} elements elements which should be modified by constraints.
+     * @param {Array<Arc | LINE>} elements elements which should be modified by constraints.
      *                              `points` array must contain points used by element.
      * @param {Array<Constraint>} constraints constraints
      */

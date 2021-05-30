@@ -186,6 +186,7 @@
             <button
               @click="selectInstrument"
               data-number="15"
+              disabled="true"
               class="instrument-btn"
               :class="{ 'instrument-btn_active': selectedInstrument === 15}"
             >
@@ -196,6 +197,7 @@
             <button
               @click="selectInstrument"
               data-number="16"
+              disabled="true"
               class="instrument-btn"
               :class="{ 'instrument-btn_active': selectedInstrument === 16}"
             >
@@ -206,6 +208,7 @@
             <button
               @click="selectInstrument"
               data-number="17"
+              disabled="true"
               class="instrument-btn"
               :class="{ 'instrument-btn_active': selectedInstrument === 17}"
             >
@@ -216,6 +219,7 @@
             <button
               @click="selectInstrument"
               data-number="25"
+              disabled="true"
               class="instrument-btn"
               :class="{ 'instrument-btn_active': selectedInstrument === 25}"
             >
@@ -226,6 +230,7 @@
             <button
               @click="selectInstrument"
               data-number="21"
+              disabled="true"
               class="instrument-btn"
               :class="{ 'instrument-btn_active': selectedInstrument === 21}"
             >
@@ -235,6 +240,7 @@
           <li class="instruments-list__el">
             <button
               @click="selectInstrument"
+              disabled="true"
               data-number="18"
               class="instrument-btn"
               :class="{ 'instrument-btn_active': selectedInstrument === 18}"
@@ -246,6 +252,7 @@
             <button
               @click="selectInstrument"
               data-number="19"
+              disabled="true"
               class="instrument-btn"
               :class="{ 'instrument-btn_active': selectedInstrument === 19}"
             >
@@ -256,6 +263,7 @@
             <button
               @click="selectInstrument"
               data-number="20"
+              disabled="true"
               class="instrument-btn"
               :class="{ 'instrument-btn_active': selectedInstrument === 20}"
             >
@@ -266,6 +274,7 @@
             <button
               @click="selectInstrument"
               data-number="22"
+              disabled="true"
               class="instrument-btn"
               :class="{ 'instrument-btn_active': selectedInstrument === 22}"
             >
@@ -276,6 +285,7 @@
             <button
               @click="selectInstrument"
               data-number="26"
+              disabled="true"
               class="instrument-btn"
               :class="{ 'instrument-btn_active': selectedInstrument === 26}"
             >
@@ -678,14 +688,17 @@ export default {
             relatedPoint.x = point.x();
             relatedPoint.y = point.y();
 
-            const endAngle = (arc.rotation() + arc.angle()) * (Math.PI / 180);
-            const newEndYPos = (Math.sin(endAngle) * arcRadius) + centerPoint.y();
-            const newEndXPos = (Math.cos(endAngle) * arcRadius) + centerPoint.x();
+            // const endAngle = (arc.rotation() + arc.angle()) * (Math.PI / 180);
+            // const newEndYPos = (Math.sin(endAngle) * arcRadius) + centerPoint.y();
+            // const newEndXPos = (Math.cos(endAngle) * arcRadius) + centerPoint.x();
 
-            endPoint.x(newEndXPos);
-            endPoint.y(newEndYPos);
-            endPoint.relatedPoint.x = endPoint.x();
-            endPoint.relatedPoint.y = endPoint.y();
+            // endPoint.x(newEndXPos);
+            // endPoint.y(newEndYPos);
+            // endPoint.relatedPoint.x = endPoint.x();
+            // endPoint.relatedPoint.y = endPoint.y();
+
+            const newArcAngle = arc.angle() - rotationDelta;
+            arc.angle(newArcAngle);
 
           } else if (point.relatedId == endPoint.relatedId) { // move arc end point
             const arcRadius = arc.innerRadius();
@@ -726,7 +739,7 @@ export default {
               this.updateDrawing()
             }
           } catch (e) {
-            console.error(e.message);
+            console.error(e);
           }
           this.prevLineDrag = Date.now();
         }
@@ -789,50 +802,43 @@ export default {
     updateArcPos(arc) {
       const arcModel = arc.relatedArc;
       console.log(arcModel);
-      let { center, R, fi1, fi2 } = arcModel;
-      const centerPoint = arc.centerPoint;
-      const startPoint = arc.startPoint;
-      const endPoint = arc.endPoint;
-      fi2 %= 360;
-      fi1 %= 360;
-      if (fi1 < 0) {
-        fi1 += 360;
-      }
-      if (fi2 < 0) {
-        fi2 += 360;
-      }
-      console.log(`fi1: ${fi1}`);
-      console.log(`fi2: ${fi2}`);
+      let { p0, p1, p2 } = arcModel;
+      const R = arcModel.calcRad();
 
-      arc.x(center.x);
-      arc.y(center.y);
-      arc.rotation(fi1)
-      arc.angle(fi2 - fi1);
+      const dx1 = p1.x - p0.x;
+      const dy1 = p1.y - p0.y;
+      let fi1 = Math.acos(dx1 / R);
+      if (dy1 < 0) { // for angle more than PI rad;
+        fi1 = 2 * Math.PI - fi1;
+      }
+
+      const dx2 = p2.x - p0.x;
+      const dy2 = p2.y - p0.y;
+      let fi2 = Math.acos(dx2 / R);
+      if (dy2 < 0) { // for angle more than PI rad;
+        fi2 = 2 * Math.PI - fi2;
+      }
+
+      let angle = fi2 - fi1;
+      if (fi2 < fi1) {
+        angle += 2 * Math.PI;
+      }
+      const fi1Deg = fi1 * 180 / Math.PI;
+      const angleDeg = angle * 180 / Math.PI;
+
+      arc.x(p0.x);
+      arc.y(p0.y);
+      arc.rotation(fi1Deg)
+      arc.angle(angleDeg);
       arc.innerRadius(R)
       arc.outerRadius(R + 3);
 
-      centerPoint.x(center.x);
-      centerPoint.y(center.y);
-      centerPoint.relatedPoint.x = center.x;
-      centerPoint.relatedPoint.y = center.y;
-
-
-      let startAngleRad = fi1 * (Math.PI / 180);
-      let endAngleRad = fi2 * (Math.PI / 180);
-      const newStartYPos = (Math.sin(startAngleRad) * R) + centerPoint.y();
-      const newStartXPos = (Math.cos(startAngleRad) * R) + centerPoint.x();
-      const newEndYPos = (Math.sin(endAngleRad) * R) + centerPoint.y();
-      const newEndXPos = (Math.cos(endAngleRad) * R) + centerPoint.x();
-
-      startPoint.x(newStartXPos);
-      startPoint.y(newStartYPos);
-      startPoint.relatedPoint.x = startPoint.x();
-      startPoint.relatedPoint.y = startPoint.y();
-
-      endPoint.x(newEndXPos);
-      endPoint.y(newEndYPos);
-      endPoint.relatedPoint.x = endPoint.x();
-      endPoint.relatedPoint.y = endPoint.y();
+      arc.centerPoint.x(p0.x);
+      arc.centerPoint.y(p0.y);
+      arc.startPoint.x(p1.x);
+      arc.startPoint.y(p1.y);
+      arc.endPoint.x(p2.x);
+      arc.endPoint.y(p2.y);
 
       this.layer.draw();
     },
@@ -1412,6 +1418,7 @@ export default {
         } else if (this.selectedInstrument === 4) { // selected instrument – line
           console.log('line');
           if (!this.endOfLine) {
+            console.log(JSON.stringify(pointerX))
             const startModelPoint = new Point(pointerX, pointerY);
             const endModelPoint = new Point(pointerX, pointerY);
             this.dataLayer.addPoint(startModelPoint);
@@ -1525,12 +1532,12 @@ export default {
               y: centerPoint.y(),
               innerRadius: arcRadius,
               outerRadius: arcRadius + 3,
-              angle: 0,
+              angle:  0,
               fill: defaultElementColor,
               stroke: defaultElementColor,
               strokeWidth: 0,
               rotation: startAngle,
-              clockwise: true,
+              // clockwise: true,
               draggable: true,
             });
 
@@ -1548,7 +1555,15 @@ export default {
             this.arcDrawingStage = 2;
           } else if (this.arcDrawingStage == 2) {
             const arc = this.drawingPoints[this.drawingPoints.length - 1].relatedArc;
-            let arcModel = new Arc(arc.centerPoint.relatedPoint, arc.innerRadius(), arc.rotation(), arc.rotation() + arc.angle(), 'DEG');
+            const p0 = arc.centerPoint.relatedPoint;
+            const p1 = arc.startPoint.relatedPoint;
+            const p2 = arc.endPoint.relatedPoint;
+            const arcModel = new Arc(p0, p1, p2, 'DEG');
+
+            const equalRadiusConstraint = new Constraint({ type: 'EQUAL_LINES', lines: [[ p0, p1 ], [ p0, p2 ]] });
+            this.dataLayer.addConstraint(equalRadiusConstraint);
+            arc.relatedConstraints[equalRadiusConstraint.type] = [ equalRadiusConstraint ];
+            
             arc.relatedArc = arcModel;
             arc.relatedId = arcModel.id;
             this.setArcEvents(arc);

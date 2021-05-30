@@ -38,7 +38,7 @@ class DataLayer {
       result = this._kernel.solve(this._points, this._elements, this._constrains);
       console.log(this._points);
     } catch (e) {
-      console.error(e.message);
+      console.error(e);
       this._constrains.pop();
     }
     return result;

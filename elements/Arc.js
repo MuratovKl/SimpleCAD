@@ -3,12 +3,11 @@ import { ElementTypes } from './ElementTypes.js';
 class Arc {
   static curId = 0;
 
-  constructor(center, R, fi1, fi2, angleMode = 'RAD') {
-    this._center = center;
-    this._R = R;
-    this._fi1 = fi1;
-    this._fi2 = fi2;
-    this._angleMode = angleMode; // DEG | RAD
+  constructor(p0, p1, p2, angleMode = 'RAD') {
+    this._p0 = p0;
+    this._p1 = p1;
+    this._p2 = p2;
+    this._angleMode = angleMode; // 'DEG' or 'RAD'
     this._id = Arc.curId++;
   }
 
@@ -16,10 +15,23 @@ class Arc {
     return ElementTypes.ARC;
   }
   get center() {
-    return this._center;
+    return this._p0;
+  }
+  get p0() {
+    return this._p0;
+  }
+  get p1() {
+    return this._p1;
+  }
+  get p2() {
+    return this._p2;
   }
   get R() {
     return this._R;
+  }
+  calcRad() {
+    console.log({_p1: this._p1, _p2: this._p2})
+    return Math.sqrt(Math.pow((this._p1.x - this._p0.x), 2) + Math.pow((this._p1.y - this._p0.y), 2));
   }
   get fi1() {
     return this._fi1;
@@ -33,7 +45,16 @@ class Arc {
   }
 
   set center(val) {
-    this._center = val;
+    this._p0 = val;
+  }
+  set p0(val) {
+    this._p0 = val;
+  }
+  set p1(val) {
+    this._p1 = val;
+  }
+  set p2(val) {
+    this._p2 = val;
   }
   set R(val) {
     this._R = val;
