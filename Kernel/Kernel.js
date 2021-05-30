@@ -76,19 +76,19 @@ class Kernel {
                 throw Error("NaN: " + axisGlobal[i])
             }
 
-            if (axisGlobal[i].startsWith("dR")) {
-                let name, idStr, type, idx;
-                [name, idStr, type] = axisGlobal[i].split('_'); // dx_1, dFi1_2_ARC etc.
-                idx = elements.findIndex(elem => {
-                    let id = Number.parseInt(idStr);
-                    return (elem.id === id) && (elem.type === type);
-                })
-                if (idx != -1) {
-                    if (!(elements[idx].R + deltas[i] > 0)) {
-                        throw Error("new radius <= 0");
-                    }
-                }
-            }
+            // if (axisGlobal[i].startsWith("dR")) {
+            //     let name, idStr, type, idx;
+            //     [name, idStr, type] = axisGlobal[i].split('_'); // dx_1, dFi1_2_ARC etc.
+            //     idx = elements.findIndex(elem => {
+            //         let id = Number.parseInt(idStr);
+            //         return (elem.id === id) && (elem.type === type);
+            //     })
+            //     if (idx != -1) {
+            //         if (!(elements[idx].R + deltas[i] > 0)) {
+            //             throw Error("new radius <= 0");
+            //         }
+            //     }
+            // }
         }
         return true;
     }
@@ -118,43 +118,42 @@ class Kernel {
                             points[idx].y += deltas[i];
                         }
                         break;
-                    case 'dR':
-                        idx = elements.findIndex(elem => {
-                            let id = Number.parseInt(idStr);
-                            return (elem.id === id) && (elem.type === type);
-                        })
-                        if (idx != -1) {
-                            elements[idx].R += deltas[i]
-                        }
-                        break;
-                    // TODO -360 <= fi <= 360 !!!
-                    case 'dFi1':
-                        idx = elements.findIndex(elem => {
-                            let id = Number.parseInt(idStr);
-                            return (elem.id === id) && (elem.type === type);
-                        })
-                        if (idx != -1) {
-                            let deltaFi = deltas[i];
-                            if (elements[idx].angleMode == 'DEG') {
-                                deltaFi = deltaFi * 180 / Math.PI;
-                            }
-                            elements[idx].fi1 += deltaFi;
-                        }
-                        break;
-                    case 'dFi2':
-                        idx = elements.findIndex(elem => {
-                            let id = Number.parseInt(idStr);
-                            return (elem.id === id) && (elem.type === type);
-                        })
-                        if (idx != -1) {
-                            let deltaFi = deltas[i];
-                            if (elements[idx].angleMode == 'DEG') {
-                                deltaFi = deltaFi * 180 / Math.PI;
-                            }
-                            elements[idx].fi2 += deltaFi;
-                        }
-                        break;
-
+                    // case 'dR':
+                    //     idx = elements.findIndex(elem => {
+                    //         let id = Number.parseInt(idStr);
+                    //         return (elem.id === id) && (elem.type === type);
+                    //     })
+                    //     if (idx != -1) {
+                    //         elements[idx].R += deltas[i]
+                    //     }
+                    //     break;
+                    // // TODO -360 <= fi <= 360 !!!
+                    // case 'dFi1':
+                    //     idx = elements.findIndex(elem => {
+                    //         let id = Number.parseInt(idStr);
+                    //         return (elem.id === id) && (elem.type === type);
+                    //     })
+                    //     if (idx != -1) {
+                    //         let deltaFi = deltas[i];
+                    //         if (elements[idx].angleMode == 'DEG') {
+                    //             deltaFi = deltaFi * 180 / Math.PI;
+                    //         }
+                    //         elements[idx].fi1 += deltaFi;
+                    //     }
+                    //     break;
+                    // case 'dFi2':
+                    //     idx = elements.findIndex(elem => {
+                    //         let id = Number.parseInt(idStr);
+                    //         return (elem.id === id) && (elem.type === type);
+                    //     })
+                    //     if (idx != -1) {
+                    //         let deltaFi = deltas[i];
+                    //         if (elements[idx].angleMode == 'DEG') {
+                    //             deltaFi = deltaFi * 180 / Math.PI;
+                    //         }
+                    //         elements[idx].fi2 += deltaFi;
+                    //     }
+                    //     break;
                     default:
                         break;
                 }
@@ -489,9 +488,6 @@ class Kernel {
                             elementUsedInConstraints.dFi2 = true;
                             elementUsedInConstraints.dR = true;
                             break;
-                        case ConstraintsTypes.ARC_RADIUS:
-                            elementUsedInConstraints.dR = true;
-                            break;
                         case ConstraintsTypes.ARC_ANGLE:
                             elementUsedInConstraints.dFi1 = true;
                             elementUsedInConstraints.dFi2 = true;
@@ -538,6 +534,10 @@ class Kernel {
                 // add dx_i and dy_i to axisGlobal
                 const pointsInConstraint = [];
                 switch (constraint.type) {
+                    case ConstraintsTypes.ARC_RADIUS:
+                        pointsInConstraint.push(constraint.elements[0].p0);
+                        pointsInConstraint.push(constraint.elements[0].p1);
+                        break;
                     case ConstraintsTypes.ARC_TANGENT_ToArc:
                         pointsInConstraint.push(constraint.elements[0].center);
                         pointsInConstraint.push(constraint.elements[1].center);
@@ -567,6 +567,10 @@ class Kernel {
                         pointsUsedInConstraints.push(pointUsedInConstraints);
                     }
                     switch (constraint.type) {
+                        case ConstraintsTypes.ARC_RADIUS:
+                            pointUsedInConstraints.dx = true;
+                            pointUsedInConstraints.dy = true;
+                            break;
                         case ConstraintsTypes.ARC_TANGENT_ToArc:
                             pointUsedInConstraints.dx = true;
                             pointUsedInConstraints.dy = true;

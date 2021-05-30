@@ -197,7 +197,6 @@
             <button
               @click="selectInstrument"
               data-number="16"
-              disabled="true"
               class="instrument-btn"
               :class="{ 'instrument-btn_active': selectedInstrument === 16}"
             >
@@ -1213,7 +1212,7 @@ export default {
           arc.relatedConstraints[constraint.type] = [ constraint ];
           this.dataLayer.addConstraint(constraint);
           this.updateDrawing();
-        } else if (this.selectedInstrument === 16 && !('ARC_RADIUS' in arc.relatedConstraints)) {
+        } else if (this.selectedInstrument === 16 && !(ConstraintsTypes.ARC_RADIUS in arc.relatedConstraints)) {
           console.log('arc radius')
           const answer = parseFloat(prompt('Введите радиус дуги:'));
           if (isNaN(answer)) {
@@ -1221,7 +1220,7 @@ export default {
             return;
           }
           console.log(arc.relatedArc);
-          const constraint = new Constraint({ type: 'ARC_RADIUS', elements: [arc.relatedArc], value: answer });
+          const constraint = new Constraint({ type: ConstraintsTypes.ARC_RADIUS, elements: [arc.relatedArc], value: answer });
           arc.relatedConstraints[constraint.type] = [ constraint ];
           this.dataLayer.addConstraint(constraint);
           this.updateDrawing();
