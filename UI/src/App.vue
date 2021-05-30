@@ -99,7 +99,7 @@
               class="instrument-btn"
               :class="{ 'instrument-btn_active': selectedInstrument === 6}"
             >
-              Расстояние между точками / длина прямой
+              Расстояние между точками / длина отрезка
             </button>
           </li>
           <li class="instruments-list__el">
@@ -109,7 +109,7 @@
               class="instrument-btn"
               :class="{ 'instrument-btn_active': selectedInstrument === 24}"
             >
-              Расстояние между точкой и прямой
+              Расстояние между точкой и отрезком
             </button>
           </li>
           <li class="instruments-list__el">
@@ -159,7 +159,7 @@
               class="instrument-btn"
               :class="{ 'instrument-btn_active': selectedInstrument === 11}"
             >
-              Угол между линиями
+              Угол между отрезками
             </button>
           </li>
           <li class="instruments-list__el">
@@ -179,7 +179,7 @@
               class="instrument-btn"
               :class="{ 'instrument-btn_active': selectedInstrument === 23}"
             >
-              Равная длина прямых
+              Равная длина отрезков
             </button>
           </li>
           <li class="instruments-list__el">
@@ -222,7 +222,9 @@
               class="instrument-btn"
               :class="{ 'instrument-btn_active': selectedInstrument === 25}"
             >
-              Перпендикулярность прямой к дуге в точке
+              <del>
+                Перпендикулярность прямой к дуге в точке
+              </del>
             </button>
           </li>
           <li class="instruments-list__el">
@@ -233,7 +235,9 @@
               class="instrument-btn"
               :class="{ 'instrument-btn_active': selectedInstrument === 21}"
             >
-              Совмещение точки и конца дуги
+              <del>
+                Совмещение точки и конца дуги
+              </del>
             </button>
           </li>
           <li class="instruments-list__el">
@@ -266,7 +270,7 @@
               class="instrument-btn"
               :class="{ 'instrument-btn_active': selectedInstrument === 20}"
             >
-              Касание дуги и линии
+              Касание дуги и отрезка
             </button>
           </li>
           <li class="instruments-list__el">
@@ -277,7 +281,9 @@
               class="instrument-btn"
               :class="{ 'instrument-btn_active': selectedInstrument === 22}"
             >
-              Фиксация конца дуги
+              <del>
+                Фиксация конца дуги
+              </del>
             </button>
           </li>
           <li class="instruments-list__el">
