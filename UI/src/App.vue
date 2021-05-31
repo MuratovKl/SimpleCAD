@@ -808,7 +808,7 @@ export default {
       const arcModel = arc.relatedArc;
       console.log(arcModel);
       let { p0, p1, p2 } = arcModel;
-      const R = arcModel.calcRad();
+      const R = arcModel.calcRadius();
 
       const dx1 = p1.x - p0.x;
       const dy1 = p1.y - p0.y;
@@ -1307,10 +1307,10 @@ export default {
           arc.fill(selectedElementColor)
           this.layer.draw();
         } else if (this.selectedInstrument === 27) {
-          const radius = arc.relatedArc.R;
-          const fi1 = arc.relatedArc.fi1;
-          const fi2 = arc.relatedArc.fi2;
-          const angle = Math.max(fi1, fi2) - Math.min(fi1, fi2);
+          const radius = arc.relatedArc.calcRadius();
+          const fi1 = arc.relatedArc.calcFi1Deg();
+          const fi2 = arc.relatedArc.calcFi2Deg();
+          const angle = arc.relatedArc.calcAngleDeg();
           const arcLength = radius * (Math.PI * angle /180);
           const message = "Arc#" + arc.relatedArc.id + ":\nR = " + radius.toFixed(2)+ "\n\nArc length is " + arcLength.toFixed(2)
                            + "\n\nAngle = " + angle.toFixed(2) + "\n" + "fi1 = " + fi1.toFixed(2) + "\n" + "fi2 = " + fi2.toFixed(2) ;

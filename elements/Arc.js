@@ -29,10 +29,56 @@ class Arc {
   get R() {
     return this._R;
   }
-  calcRad() {
+
+  calcRadius() {
     console.log({_p1: this._p1, _p2: this._p2})
     return Math.sqrt(Math.pow((this._p1.x - this._p0.x), 2) + Math.pow((this._p1.y - this._p0.y), 2));
   }
+
+  calcFi1Rad() {
+    const dx1 = this._p1.x - this._p0.x;
+    const dy1 = this._p1.y - this._p0.y;
+    const R = this.calcRadius()
+    let fi1 = Math.acos(dx1 / R);
+    if (dy1 < 0) { // for angle more than PI rad;
+      fi1 = 2 * Math.PI - fi1;
+    }
+    return fi1;
+  }
+  
+  calcFi1Deg() {
+    return this.calcFi1Rad() * 180 / Math.PI;
+  }
+
+  calcFi2Rad() {
+    const dx2 = this._p2.x - this._p0.x;
+    const dy2 = this._p2.y - this._p0.y;
+    const R = this.calcRadius()
+    let fi2 = Math.acos(dx2 / R);
+    if (dy2 < 0) { // for angle more than PI rad;
+      fi2 = 2 * Math.PI - fi2;
+    }
+    return fi2;
+  }
+  
+  calcFi2Deg() {
+    return this.calcFi2Rad() * 180 / Math.PI;
+  }
+
+  calcAngleRad() {
+    const fi1 = this.calcFi1Rad();
+    const fi2 = this.calcFi2Rad();
+    let angle = fi2 - fi1;
+    if (fi2 < fi1) {
+      angle += 2 * Math.PI;
+    }
+    return angle;
+  }
+  
+  calcAngleDeg() {
+    return this.calcAngleRad() * 180 / Math.PI;
+  }
+
   get fi1() {
     return this._fi1;
   }
