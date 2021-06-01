@@ -207,7 +207,6 @@
             <button
               @click="selectInstrument"
               data-number="17"
-              disabled="true"
               class="instrument-btn"
               :class="{ 'instrument-btn_active': selectedInstrument === 17}"
             >
