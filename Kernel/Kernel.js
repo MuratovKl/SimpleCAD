@@ -483,11 +483,6 @@ class Kernel {
                         elementsUsedInConstraints.push(elementUsedInConstraints);
                     }
                     switch (constraint.type) {
-                        case ConstraintsTypes.ARC_LENGTH:
-                            elementUsedInConstraints.dFi1 = true;
-                            elementUsedInConstraints.dFi2 = true;
-                            elementUsedInConstraints.dR = true;
-                            break;
                         case ConstraintsTypes.ARC_TANGENT_ToArc:
                             elementUsedInConstraints.dR = true;
                             break;
@@ -539,6 +534,11 @@ class Kernel {
                         pointsInConstraint.push(constraint.elements[0].p1);
                         pointsInConstraint.push(constraint.elements[0].p2);
                         break;
+                    case ConstraintsTypes.ARC_LENGTH:
+                        pointsInConstraint.push(constraint.elements[0].p0);
+                        pointsInConstraint.push(constraint.elements[0].p1);
+                        pointsInConstraint.push(constraint.elements[0].p2);
+                        break;
                     case ConstraintsTypes.ARC_TANGENT_ToArc:
                         pointsInConstraint.push(constraint.elements[0].center);
                         pointsInConstraint.push(constraint.elements[1].center);
@@ -573,6 +573,10 @@ class Kernel {
                             pointUsedInConstraints.dy = true;
                             break;
                         case ConstraintsTypes.ARC_ANGLE:
+                            pointUsedInConstraints.dx = true;
+                            pointUsedInConstraints.dy = true;
+                            break;
+                        case ConstraintsTypes.ARC_LENGTH:
                             pointUsedInConstraints.dx = true;
                             pointUsedInConstraints.dy = true;
                             break;

@@ -186,7 +186,6 @@
             <button
               @click="selectInstrument"
               data-number="15"
-              disabled="true"
               class="instrument-btn"
               :class="{ 'instrument-btn_active': selectedInstrument === 15}"
             >
@@ -1205,15 +1204,16 @@ export default {
     setArcEvents(arc) {
       arc.on('click', () => {
         console.log('arc events');
-        if (this.selectedInstrument === 15 && !('ARC_LENGTH' in arc.relatedConstraints)) {
+        if (this.selectedInstrument === 15 && !(ConstraintsTypes.ARC_LENGTH in arc.relatedConstraints)) {
           console.log('arc length')
-          const answer = parseFloat(prompt('Введите длину дуги:'));
-          if (isNaN(answer)) {
-            alert('Введено неверное значение длины');
+          const answer = prompt('Введите длину дуги:');
+          const lenght = parseFloat(answer);
+          if (isNaN(lenght) || lenght <= 0) {
+            alert('Введено неверное значение длины:' + answer);
             return;
           }
           console.log(arc.relatedArc);
-          const constraint = new Constraint({ type: 'ARC_LENGTH', elements: [arc.relatedArc], value: answer });
+          const constraint = new Constraint({ type: ConstraintsTypes.ARC_LENGTH, elements: [arc.relatedArc], value: lenght });
           arc.relatedConstraints[constraint.type] = [ constraint ];
           this.dataLayer.addConstraint(constraint);
           this.updateDrawing();
