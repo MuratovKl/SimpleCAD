@@ -1219,25 +1219,27 @@ export default {
           this.updateDrawing();
         } else if (this.selectedInstrument === 16 && !(ConstraintsTypes.ARC_RADIUS in arc.relatedConstraints)) {
           console.log('arc radius')
-          const answer = parseFloat(prompt('Введите радиус дуги:'));
-          if (isNaN(answer)) {
-            alert('Введено неверное значение радиуса');
+          const answer = prompt('Введите радиус дуги:');
+          const radius = parseFloat(answer);
+          if (isNaN(radius) || radius <= 0) {
+            alert('Введено неверное значение радиуса: ' + answer);
             return;
           }
           console.log(arc.relatedArc);
-          const constraint = new Constraint({ type: ConstraintsTypes.ARC_RADIUS, elements: [arc.relatedArc], value: answer });
+          const constraint = new Constraint({ type: ConstraintsTypes.ARC_RADIUS, elements: [arc.relatedArc], value: radius });
           arc.relatedConstraints[constraint.type] = [ constraint ];
           this.dataLayer.addConstraint(constraint);
           this.updateDrawing();
-        } else if (this.selectedInstrument === 17 && !('ARC_ANGLE' in arc.relatedConstraints)) {
+        } else if (this.selectedInstrument === 17 && !(ConstraintsTypes.ARC_ANGLE in arc.relatedConstraints)) {
           console.log('arc angle')
-          const answer = parseFloat(prompt('Введите угол дуги:'));
-          if (isNaN(answer)) {
-            alert('Введено неверное значение угла');
+          const answer = prompt('Введите угол дуги:');
+          const angle = parseFloat(answer);
+          if (isNaN(angle) || angle <= 0 || angle > 360) {
+            alert('Введено неверное значение угла: ' + answer);
             return;
           }
           console.log(arc.relatedArc);
-          const constraint = new Constraint({ type: 'ARC_ANGLE', elements: [arc.relatedArc], value: answer });
+          const constraint = new Constraint({ type: ConstraintsTypes.ARC_ANGLE, elements: [arc.relatedArc], value: angle });
           arc.relatedConstraints[constraint.type] = [ constraint ];
           this.dataLayer.addConstraint(constraint);
           this.updateDrawing();
