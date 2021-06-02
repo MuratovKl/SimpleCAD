@@ -227,6 +227,16 @@
           <li class="instruments-list__el">
             <button
               @click="selectInstrument"
+              data-number="20"
+              class="instrument-btn"
+              :class="{ 'instrument-btn_active': selectedInstrument === 20}"
+            >
+              Касание дуги и отрезка
+            </button>
+          </li>
+          <li class="instruments-list__el">
+            <button
+              @click="selectInstrument"
               data-number="25"
               disabled="true"
               class="instrument-btn"
@@ -270,17 +280,6 @@
               :class="{ 'instrument-btn_active': selectedInstrument === 19}"
             >
               Внутреннее касание дуг
-            </button>
-          </li>
-          <li class="instruments-list__el">
-            <button
-              @click="selectInstrument"
-              data-number="20"
-              disabled="true"
-              class="instrument-btn"
-              :class="{ 'instrument-btn_active': selectedInstrument === 20}"
-            >
-              Касание дуги и отрезка
             </button>
           </li>
           <li class="instruments-list__el">

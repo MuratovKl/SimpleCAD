@@ -1,4 +1,13 @@
 /**
+ * Dirac delta function
+ * @param {Number} x argument 
+ * @returns function value
+ */
+function dirac(x) {
+    return x === 0 ? Number.MAX_VALUE : 0;
+}
+
+/**
  * Function for Horizontal constraint. 
  * This function fill local matrix J and vector F.
  * 
@@ -1393,17 +1402,21 @@ function getDerivativeFunction_ArcTangentToArc(constraint, unknowns, axisGlobal)
  * @returns {Object} Object with axis names, local Jacobian and local vector F
  */
 function getDerivativeFunction_ArcTangentToLine(constraint, unknowns, axisGlobal) {
-    const dim = 8;
+    const dim = 9;
+
+    const arc = constraint.elements[0];
+    const line = constraint.lines[0];
 
     const axisLocal = [];
     axisLocal.push('lambda_' + constraint.id);
-    axisLocal.push('dx_' + constraint.lines[0][0].id);
-    axisLocal.push('dy_' + constraint.lines[0][0].id);
-    axisLocal.push('dx_' + constraint.lines[0][1].id);
-    axisLocal.push('dy_' + constraint.lines[0][1].id);
-    axisLocal.push('dx_' + constraint.elements[0].center.id);
-    axisLocal.push('dy_' + constraint.elements[0].center.id);
-    axisLocal.push('dR_' + constraint.elements[0].id + '_' + constraint.elements[0].type)
+    axisLocal.push('dx_' + line[0].id);
+    axisLocal.push('dy_' + line[0].id);
+    axisLocal.push('dx_' + line[1].id);
+    axisLocal.push('dy_' + line[1].id);
+    axisLocal.push('dx_' + arc.p0.id);
+    axisLocal.push('dy_' + arc.p0.id);
+    axisLocal.push('dx_' + arc.p1.id);
+    axisLocal.push('dy_' + arc.p1.id);
 
     const localToGlobal = new Array(dim);
     for (let i = 0; i < dim; i++) {
@@ -1420,106 +1433,125 @@ function getDerivativeFunction_ArcTangentToLine(constraint, unknowns, axisGlobal
         }
     }
 
-    const arc = constraint.elements[0];
-    const line = constraint.lines[0];
-
-    const x0 = arc.center.x;
-    const y0 = arc.center.y;
-    const r0 = arc.R;
-    const x1 = line[0].x;
-    const y1 = line[0].y;
-    const x2 = line[1].x;
-    const y2 = line[1].y
+    const xA = line[0].x;
+    const yA = line[0].y;
+    const xB = line[1].x;
+    const yB = line[1].y
+    const x0 = arc.p0.x;
+    const y0 = arc.p0.y;
+    const x1 = arc.p1.x;
+    const y1 = arc.p1.y;
 
     const lambda = unknowns[localToGlobal[0]];
-    const dx1 = unknowns[localToGlobal[1]];
-    const dy1 = unknowns[localToGlobal[2]];
-    const dx2 = unknowns[localToGlobal[3]];
-    const dy2 = unknowns[localToGlobal[4]];
+    const dxA = unknowns[localToGlobal[1]];
+    const dyA = unknowns[localToGlobal[2]];
+    const dxB = unknowns[localToGlobal[3]];
+    const dyB = unknowns[localToGlobal[4]];
     const dx0 = unknowns[localToGlobal[5]];
     const dy0 = unknowns[localToGlobal[6]];
-    const dr0 = unknowns[localToGlobal[7]];
+    const dx1 = unknowns[localToGlobal[7]];
+    const dy1 = unknowns[localToGlobal[8]];
 
-    const x1x2 = x1 + dx1 - x2 - dx2;
-    const y1y2 = y1 + dy1 - y2 - dy2;
-    const y2y1 = y2 + dy2 - y1 - dy1;
-    const xy_ = (x1x2 * x1x2 + y1y2 * y1y2)
-    const sqrtXY = Math.sqrt(xy_);
-    const xy_32 = Math.pow(xy_, 1.5);
-    
-    const q2 = y2y1*(x0+dx0) + x1x2*(y0+dy0) + (x2+dx2)*(y1+dy1) - (x1+dx1)*(y2+dy2);
-    const signum = Math.sign(q2);
+    // TODO calulate 'signum' one time before next code
+    F_Local[0] = Math.abs((yB + dyB - yA - dyA)*(x0 + dx0) + (xA + dxA - xB - dxB)*(y0 + dy0) + ((xB + dxB)*(yA + dyA) - (xA + dxA)*(yB +dyB))) - Math.sqrt(Math.pow((x1+dx1-x0-dx0),2) + Math.pow((y1 + dy1 - y0 - dy0),2))*Math.sqrt(Math.pow((xB + dxB - xA - dxA),2) + Math.pow((yB + dyB - yA - dyA),2));
+    F_Local[1] = lambda*(Math.sign((dy0 + y0)*(dxA - dxB + xA - xB) - (dx0 + x0)*(dyA - dyB + yA - yB) - (dxA + xA)*(dyB + yB) + (dxB + xB)*(dyA + yA))*(dy0 - dyB + y0 - yB) - (Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2)*(2*dxA - 2*dxB + 2*xA - 2*xB))/(2*Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2)));
+    F_Local[2] = -lambda*(Math.sign((dy0 + y0)*(dxA - dxB + xA - xB) - (dx0 + x0)*(dyA - dyB + yA - yB) - (dxA + xA)*(dyB + yB) + (dxB + xB)*(dyA + yA))*(dx0 - dxB + x0 - xB) + (Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2)*(2*dyA - 2*dyB + 2*yA - 2*yB))/(2*Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2)));
+    F_Local[3] = -lambda*(Math.sign((dy0 + y0)*(dxA - dxB + xA - xB) - (dx0 + x0)*(dyA - dyB + yA - yB) - (dxA + xA)*(dyB + yB) + (dxB + xB)*(dyA + yA))*(dy0 - dyA + y0 - yA) - (Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2)*(2*dxA - 2*dxB + 2*xA - 2*xB))/(2*Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2)));
+    F_Local[4] = lambda*(Math.sign((dy0 + y0)*(dxA - dxB + xA - xB) - (dx0 + x0)*(dyA - dyB + yA - yB) - (dxA + xA)*(dyB + yB) + (dxB + xB)*(dyA + yA))*(dx0 - dxA + x0 - xA) + (Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2)*(2*dyA - 2*dyB + 2*yA - 2*yB))/(2*Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2)));
+    F_Local[5] = -lambda*(Math.sign((dy0 + y0)*(dxA - dxB + xA - xB) - (dx0 + x0)*(dyA - dyB + yA - yB) - (dxA + xA)*(dyB + yB) + (dxB + xB)*(dyA + yA))*(dyA - dyB + yA - yB) + (Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2)*(2*dx0 - 2*dx1 + 2*x0 - 2*x1))/(2*Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2)));
+    F_Local[6] = lambda*(Math.sign((dy0 + y0)*(dxA - dxB + xA - xB) - (dx0 + x0)*(dyA - dyB + yA - yB) - (dxA + xA)*(dyB + yB) + (dxB + xB)*(dyA + yA))*(dxA - dxB + xA - xB) - (Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2)*(2*dy0 - 2*dy1 + 2*y0 - 2*y1))/(2*Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2)));
+    F_Local[7] = (lambda*Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2)*(2*dx0 - 2*dx1 + 2*x0 - 2*x1))/(2*Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2));
+    F_Local[8] = (lambda*Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2)*(2*dy0 - 2*dy1 + 2*y0 - 2*y1))/(2*Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2));
 
-    const a_ = ((y0 + dy0) - (y2 + dy2))*signum - (r0 + dr0) * x1x2 / sqrtXY;
-    const b_ = (-(x0 + dx0) + (x2 + dx2))*signum - (r0 + dr0) * y1y2 / sqrtXY;
-    const c_ = (-(y0 + dy0) + (y1 + dy1))*signum + (r0 + dr0) * x1x2 / sqrtXY;
-    const d_ = ((x0 + dx0) - (x1 + dx1))*signum + (r0 + dr0) * y1y2 / sqrtXY;
-    const e_ = y2y1*signum;
-    const f_ = x1x2*signum;
-    const g_ = -sqrtXY;
-    const rdr = r0+dr0;
+    JacobianLocal[0][0] = 0;
+    JacobianLocal[0][1] = Math.sign((dy0 + y0)*(dxA - dxB + xA - xB) - (dx0 + x0)*(dyA - dyB + yA - yB) - (dxA + xA)*(dyB + yB) + (dxB + xB)*(dyA + yA))*(dy0 - dyB + y0 - yB) - (Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2)*(2*dxA - 2*dxB + 2*xA - 2*xB))/(2*Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2));
+    JacobianLocal[0][2] = - Math.sign((dy0 + y0)*(dxA - dxB + xA - xB) - (dx0 + x0)*(dyA - dyB + yA - yB) - (dxA + xA)*(dyB + yB) + (dxB + xB)*(dyA + yA))*(dx0 - dxB + x0 - xB) - (Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2)*(2*dyA - 2*dyB + 2*yA - 2*yB))/(2*Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2));
+    JacobianLocal[0][3] = (Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2)*(2*dxA - 2*dxB + 2*xA - 2*xB))/(2*Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2)) - Math.sign((dy0 + y0)*(dxA - dxB + xA - xB) - (dx0 + x0)*(dyA - dyB + yA - yB) - (dxA + xA)*(dyB + yB) + (dxB + xB)*(dyA + yA))*(dy0 - dyA + y0 - yA);
+    JacobianLocal[0][4] = Math.sign((dy0 + y0)*(dxA - dxB + xA - xB) - (dx0 + x0)*(dyA - dyB + yA - yB) - (dxA + xA)*(dyB + yB) + (dxB + xB)*(dyA + yA))*(dx0 - dxA + x0 - xA) + (Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2)*(2*dyA - 2*dyB + 2*yA - 2*yB))/(2*Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2));
+    JacobianLocal[0][5] = - Math.sign((dy0 + y0)*(dxA - dxB + xA - xB) - (dx0 + x0)*(dyA - dyB + yA - yB) - (dxA + xA)*(dyB + yB) + (dxB + xB)*(dyA + yA))*(dyA - dyB + yA - yB) - (Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2)*(2*dx0 - 2*dx1 + 2*x0 - 2*x1))/(2*Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2));
+    JacobianLocal[0][6] = Math.sign((dy0 + y0)*(dxA - dxB + xA - xB) - (dx0 + x0)*(dyA - dyB + yA - yB) - (dxA + xA)*(dyB + yB) + (dxB + xB)*(dyA + yA))*(dxA - dxB + xA - xB) - (Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2)*(2*dy0 - 2*dy1 + 2*y0 - 2*y1))/(2*Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2));
+    JacobianLocal[0][7] = (Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2)*(2*dx0 - 2*dx1 + 2*x0 - 2*x1))/(2*Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2));
+    JacobianLocal[0][8] = (Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2)*(2*dy0 - 2*dy1 + 2*y0 - 2*y1))/(2*Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2));
 
-    F_Local[0] = Math.abs(y2y1 * (x0 + dx0) + x1x2 * (y0 + dy0) + ((x2 + dx2)*(y1 + dy1) - (x1 + dx1)*(y2 + dy2))) - (r0 + dr0) * sqrtXY;
-    F_Local[1] = lambda * a_;
-    F_Local[2] = lambda * b_;
-    F_Local[3] = lambda * c_;
-    F_Local[4] = lambda * d_;
-    F_Local[5] = lambda * e_;
-    F_Local[6] = lambda * f_;
+    JacobianLocal[1][0] = Math.sign((dy0 + y0)*(dxA - dxB + xA - xB) - (dx0 + x0)*(dyA - dyB + yA - yB) - (dxA + xA)*(dyB + yB) + (dxB + xB)*(dyA + yA))*(dy0 - dyB + y0 - yB) - (Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2)*(2*dxA - 2*dxB + 2*xA - 2*xB))/(2*Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2));
+    JacobianLocal[1][1] = lambda*(2*dirac((dy0 + y0)*(dxA - dxB + xA - xB) - (dx0 + x0)*(dyA - dyB + yA - yB) - (dxA + xA)*(dyB + yB) + (dxB + xB)*(dyA + yA))*Math.pow((dy0 - dyB + y0 - yB),2) - Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2)/Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2) + (Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2)*Math.pow((2*dxA - 2*dxB + 2*xA - 2*xB),2))/(4*Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),3/2)));
+    JacobianLocal[1][2] = -lambda*(2*dirac((dy0 + y0)*(dxA - dxB + xA - xB) - (dx0 + x0)*(dyA - dyB + yA - yB) - (dxA + xA)*(dyB + yB) + (dxB + xB)*(dyA + yA))*(dx0 - dxB + x0 - xB)*(dy0 - dyB + y0 - yB) - (Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2)*(2*dxA - 2*dxB + 2*xA - 2*xB)*(2*dyA - 2*dyB + 2*yA - 2*yB))/(4*Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),3/2)));
+    JacobianLocal[1][3] = -lambda*(2*dirac((dy0 + y0)*(dxA - dxB + xA - xB) - (dx0 + x0)*(dyA - dyB + yA - yB) - (dxA + xA)*(dyB + yB) + (dxB + xB)*(dyA + yA))*(dy0 - dyA + y0 - yA)*(dy0 - dyB + y0 - yB) - Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2)/Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2) + (Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2)*Math.pow((2*dxA - 2*dxB + 2*xA - 2*xB),2))/(4*Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),3/2)));
+    JacobianLocal[1][4] = -lambda*(Math.sign((dy0 + y0)*(dxA - dxB + xA - xB) - (dx0 + x0)*(dyA - dyB + yA - yB) - (dxA + xA)*(dyB + yB) + (dxB + xB)*(dyA + yA)) - 2*dirac((dy0 + y0)*(dxA - dxB + xA - xB) - (dx0 + x0)*(dyA - dyB + yA - yB) - (dxA + xA)*(dyB + yB) + (dxB + xB)*(dyA + yA))*(dx0 - dxA + x0 - xA)*(dy0 - dyB + y0 - yB) + (Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2)*(2*dxA - 2*dxB + 2*xA - 2*xB)*(2*dyA - 2*dyB + 2*yA - 2*yB))/(4*Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),3/2)));
+    JacobianLocal[1][5] = -lambda*(2*dirac((dy0 + y0)*(dxA - dxB + xA - xB) - (dx0 + x0)*(dyA - dyB + yA - yB) - (dxA + xA)*(dyB + yB) + (dxB + xB)*(dyA + yA))*(dy0 - dyB + y0 - yB)*(dyA - dyB + yA - yB) + ((2*dx0 - 2*dx1 + 2*x0 - 2*x1)*(2*dxA - 2*dxB + 2*xA - 2*xB))/(4*Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2)*Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2)));
+    JacobianLocal[1][6] = lambda*(Math.sign((dy0 + y0)*(dxA - dxB + xA - xB) - (dx0 + x0)*(dyA - dyB + yA - yB) - (dxA + xA)*(dyB + yB) + (dxB + xB)*(dyA + yA)) + 2*dirac((dy0 + y0)*(dxA - dxB + xA - xB) - (dx0 + x0)*(dyA - dyB + yA - yB) - (dxA + xA)*(dyB + yB) + (dxB + xB)*(dyA + yA))*(dxA - dxB + xA - xB)*(dy0 - dyB + y0 - yB) - ((2*dxA - 2*dxB + 2*xA - 2*xB)*(2*dy0 - 2*dy1 + 2*y0 - 2*y1))/(4*Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2)*Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2)));
+    JacobianLocal[1][7] = (lambda*(2*dx0 - 2*dx1 + 2*x0 - 2*x1)*(2*dxA - 2*dxB + 2*xA - 2*xB))/(4*Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2)*Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2));
+    JacobianLocal[1][8] = (lambda*(2*dxA - 2*dxB + 2*xA - 2*xB)*(2*dy0 - 2*dy1 + 2*y0 - 2*y1))/(4*Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2)*Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2));    
 
-    JacobianLocal[0][1] = a_;
-    JacobianLocal[0][2] = b_;
-    JacobianLocal[0][3] = c_;
-    JacobianLocal[0][4] = d_;
-    JacobianLocal[0][5] = e_;
-    JacobianLocal[0][6] = f_;
-    JacobianLocal[0][7] = g_;
+    JacobianLocal[2][0] = - Math.sign((dy0 + y0)*(dxA - dxB + xA - xB) - (dx0 + x0)*(dyA - dyB + yA - yB) - (dxA + xA)*(dyB + yB) + (dxB + xB)*(dyA + yA))*(dx0 - dxB + x0 - xB) - (Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2)*(2*dyA - 2*dyB + 2*yA - 2*yB))/(2*Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2));
+    JacobianLocal[2][1] = -lambda*(2*dirac((dy0 + y0)*(dxA - dxB + xA - xB) - (dx0 + x0)*(dyA - dyB + yA - yB) - (dxA + xA)*(dyB + yB) + (dxB + xB)*(dyA + yA))*(dx0 - dxB + x0 - xB)*(dy0 - dyB + y0 - yB) - (Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2)*(2*dxA - 2*dxB + 2*xA - 2*xB)*(2*dyA - 2*dyB + 2*yA - 2*yB))/(4*Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),3/2)));
+    JacobianLocal[2][2] = lambda*(2*dirac((dy0 + y0)*(dxA - dxB + xA - xB) - (dx0 + x0)*(dyA - dyB + yA - yB) - (dxA + xA)*(dyB + yB) + (dxB + xB)*(dyA + yA))*Math.pow((dx0 - dxB + x0 - xB),2) - Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2)/Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2) + (Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2)*Math.pow((2*dyA - 2*dyB + 2*yA - 2*yB),2))/(4*Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),3/2)));
+    JacobianLocal[2][3] = lambda*(Math.sign((dy0 + y0)*(dxA - dxB + xA - xB) - (dx0 + x0)*(dyA - dyB + yA - yB) - (dxA + xA)*(dyB + yB) + (dxB + xB)*(dyA + yA)) + 2*dirac((dy0 + y0)*(dxA - dxB + xA - xB) - (dx0 + x0)*(dyA - dyB + yA - yB) - (dxA + xA)*(dyB + yB) + (dxB + xB)*(dyA + yA))*(dx0 - dxB + x0 - xB)*(dy0 - dyA + y0 - yA) - (Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2)*(2*dxA - 2*dxB + 2*xA - 2*xB)*(2*dyA - 2*dyB + 2*yA - 2*yB))/(4*Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),3/2)));
+    JacobianLocal[2][4] = -lambda*(2*dirac((dy0 + y0)*(dxA - dxB + xA - xB) - (dx0 + x0)*(dyA - dyB + yA - yB) - (dxA + xA)*(dyB + yB) + (dxB + xB)*(dyA + yA))*(dx0 - dxA + x0 - xA)*(dx0 - dxB + x0 - xB) - Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2)/Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2) + (Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2)*Math.pow((2*dyA - 2*dyB + 2*yA - 2*yB),2))/(4*Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),3/2)));
+    JacobianLocal[2][5] = -lambda*(Math.sign((dy0 + y0)*(dxA - dxB + xA - xB) - (dx0 + x0)*(dyA - dyB + yA - yB) - (dxA + xA)*(dyB + yB) + (dxB + xB)*(dyA + yA)) - 2*dirac((dy0 + y0)*(dxA - dxB + xA - xB) - (dx0 + x0)*(dyA - dyB + yA - yB) - (dxA + xA)*(dyB + yB) + (dxB + xB)*(dyA + yA))*(dx0 - dxB + x0 - xB)*(dyA - dyB + yA - yB) + ((2*dx0 - 2*dx1 + 2*x0 - 2*x1)*(2*dyA - 2*dyB + 2*yA - 2*yB))/(4*Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2)*Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2)));
+    JacobianLocal[2][6] = -lambda*(2*dirac((dy0 + y0)*(dxA - dxB + xA - xB) - (dx0 + x0)*(dyA - dyB + yA - yB) - (dxA + xA)*(dyB + yB) + (dxB + xB)*(dyA + yA))*(dx0 - dxB + x0 - xB)*(dxA - dxB + xA - xB) + ((2*dy0 - 2*dy1 + 2*y0 - 2*y1)*(2*dyA - 2*dyB + 2*yA - 2*yB))/(4*Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2)*Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2)));
+    JacobianLocal[2][7] = (lambda*(2*dx0 - 2*dx1 + 2*x0 - 2*x1)*(2*dyA - 2*dyB + 2*yA - 2*yB))/(4*Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2)*Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2));
+    JacobianLocal[2][8] = (lambda*(2*dy0 - 2*dy1 + 2*y0 - 2*y1)*(2*dyA - 2*dyB + 2*yA - 2*yB))/(4*Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2)*Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2));
 
-    JacobianLocal[1][0] = a_;
-    JacobianLocal[1][1] = lambda * (-rdr*(-1*x1x2*x1x2/xy_32) - rdr/sqrtXY);
-    JacobianLocal[1][2] = lambda * (-rdr*(-1 * y1y2 * x1x2/xy_32));
-    JacobianLocal[1][3] = lambda * (-rdr*(-1*x1x2 * -1 * x1x2/xy_32) + rdr/sqrtXY);
-    JacobianLocal[1][4] = lambda * (-1*signum -rdr*(-1 * y1y2 * -1 * x1x2/xy_32));
-    JacobianLocal[1][6] = lambda*signum;
-    JacobianLocal[1][7] = lambda * (-x1x2/sqrtXY);
-    
-    JacobianLocal[2][0] = b_;
-    JacobianLocal[2][1] = lambda * (-rdr*(-1*x1x2*y1y2/xy_32));
-    JacobianLocal[2][2] = lambda * (-rdr * (-1* y1y2*y1y2/xy_32) -rdr/sqrtXY);
-    JacobianLocal[2][3] = lambda * (1*signum - rdr*(-1*x1x2 * -1 * y1y2/xy_32));
-    JacobianLocal[2][4] = lambda * (-rdr*(-1*y1y2 * -1 * y1y2/xy_32) + rdr/sqrtXY);
-    JacobianLocal[2][5] = -lambda*signum;
-    JacobianLocal[2][7] = lambda * (-y1y2/sqrtXY);
+    JacobianLocal[3][0] = (Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2)*(2*dxA - 2*dxB + 2*xA - 2*xB))/(2*Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2)) - Math.sign((dy0 + y0)*(dxA - dxB + xA - xB) - (dx0 + x0)*(dyA - dyB + yA - yB) - (dxA + xA)*(dyB + yB) + (dxB + xB)*(dyA + yA))*(dy0 - dyA + y0 - yA);
+    JacobianLocal[3][1] = -lambda*(2*dirac((dy0 + y0)*(dxA - dxB + xA - xB) - (dx0 + x0)*(dyA - dyB + yA - yB) - (dxA + xA)*(dyB + yB) + (dxB + xB)*(dyA + yA))*(dy0 - dyA + y0 - yA)*(dy0 - dyB + y0 - yB) - Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2)/Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2) + (Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2)*Math.pow((2*dxA - 2*dxB + 2*xA - 2*xB),2))/(4*Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),3/2)));
+    JacobianLocal[3][2] = lambda*(Math.sign((dy0 + y0)*(dxA - dxB + xA - xB) - (dx0 + x0)*(dyA - dyB + yA - yB) - (dxA + xA)*(dyB + yB) + (dxB + xB)*(dyA + yA)) + 2*dirac((dy0 + y0)*(dxA - dxB + xA - xB) - (dx0 + x0)*(dyA - dyB + yA - yB) - (dxA + xA)*(dyB + yB) + (dxB + xB)*(dyA + yA))*(dx0 - dxB + x0 - xB)*(dy0 - dyA + y0 - yA) - (Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2)*(2*dxA - 2*dxB + 2*xA - 2*xB)*(2*dyA - 2*dyB + 2*yA - 2*yB))/(4*Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),3/2)));
+    JacobianLocal[3][3] = lambda*(2*dirac((dy0 + y0)*(dxA - dxB + xA - xB) - (dx0 + x0)*(dyA - dyB + yA - yB) - (dxA + xA)*(dyB + yB) + (dxB + xB)*(dyA + yA))*Math.pow((dy0 - dyA + y0 - yA),2) - Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2)/Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2) + (Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2)*Math.pow((2*dxA - 2*dxB + 2*xA - 2*xB),2))/(4*Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),3/2)));
+    JacobianLocal[3][4] = -lambda*(2*dirac((dy0 + y0)*(dxA - dxB + xA - xB) - (dx0 + x0)*(dyA - dyB + yA - yB) - (dxA + xA)*(dyB + yB) + (dxB + xB)*(dyA + yA))*(dx0 - dxA + x0 - xA)*(dy0 - dyA + y0 - yA) - (Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2)*(2*dxA - 2*dxB + 2*xA - 2*xB)*(2*dyA - 2*dyB + 2*yA - 2*yB))/(4*Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),3/2)));
+    JacobianLocal[3][5] = lambda*(2*dirac((dy0 + y0)*(dxA - dxB + xA - xB) - (dx0 + x0)*(dyA - dyB + yA - yB) - (dxA + xA)*(dyB + yB) + (dxB + xB)*(dyA + yA))*(dy0 - dyA + y0 - yA)*(dyA - dyB + yA - yB) + ((2*dx0 - 2*dx1 + 2*x0 - 2*x1)*(2*dxA - 2*dxB + 2*xA - 2*xB))/(4*Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2)*Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2)));
+    JacobianLocal[3][6] = -lambda*(Math.sign((dy0 + y0)*(dxA - dxB + xA - xB) - (dx0 + x0)*(dyA - dyB + yA - yB) - (dxA + xA)*(dyB + yB) + (dxB + xB)*(dyA + yA)) + 2*dirac((dy0 + y0)*(dxA - dxB + xA - xB) - (dx0 + x0)*(dyA - dyB + yA - yB) - (dxA + xA)*(dyB + yB) + (dxB + xB)*(dyA + yA))*(dxA - dxB + xA - xB)*(dy0 - dyA + y0 - yA) - ((2*dxA - 2*dxB + 2*xA - 2*xB)*(2*dy0 - 2*dy1 + 2*y0 - 2*y1))/(4*Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2)*Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2)));
+    JacobianLocal[3][7] = -(lambda*(2*dx0 - 2*dx1 + 2*x0 - 2*x1)*(2*dxA - 2*dxB + 2*xA - 2*xB))/(4*Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2)*Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2));
+    JacobianLocal[3][8] = -(lambda*(2*dxA - 2*dxB + 2*xA - 2*xB)*(2*dy0 - 2*dy1 + 2*y0 - 2*y1))/(4*Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2)*Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2));
 
-    JacobianLocal[3][0] = c_;
-    JacobianLocal[3][1] = lambda * (rdr * (-1 * x1x2*x1x2/xy_32) + rdr/sqrtXY);
-    JacobianLocal[3][2] = lambda * (1*signum + rdr * (-1 * y1y2*x1x2/xy_32));
-    JacobianLocal[3][3] = lambda * (rdr * (-1 * x1x2 * -1 * x1x2/xy_32) -rdr/sqrtXY);
-    JacobianLocal[3][4] = lambda * (rdr * (-1 * y1y2 * -1 * x1x2/xy_32));
-    JacobianLocal[3][6] = -lambda*signum;
-    JacobianLocal[3][7] = lambda * (x1x2/sqrtXY);
-    
-    JacobianLocal[4][0] = d_;
-    JacobianLocal[4][1] = lambda * (-1*signum + rdr*(-1*x1x2*y1y2/xy_32));
-    JacobianLocal[4][2] = lambda * (rdr*(-1*y1y2*y1y2/xy_32) + rdr/sqrtXY);
-    JacobianLocal[4][3] = lambda * (rdr*(-1*x1x2 * -1 * y1y2/xy_32));
-    JacobianLocal[4][4] = lambda * (rdr*(-1*y1y2 * -1 * y1y2/xy_32) - rdr/sqrtXY);
-    JacobianLocal[4][5] = lambda*signum;
-    JacobianLocal[4][7] = lambda * (y1y2/sqrtXY);
-    
-    JacobianLocal[5][0] = e_;
-    JacobianLocal[5][2] = -lambda*signum;
-    JacobianLocal[5][4] = lambda*signum;
-    
-    JacobianLocal[6][0] = f_;
-    JacobianLocal[6][1] = lambda*signum;
-    JacobianLocal[6][3] = -lambda*signum;
-    
-    JacobianLocal[7][0] = g_;
-    JacobianLocal[7][1] = lambda * (-x1x2/sqrtXY);
-    JacobianLocal[7][2] = lambda * (-y1y2/sqrtXY);
-    JacobianLocal[7][3] = lambda * (x1x2/sqrtXY);
-    JacobianLocal[7][4] = lambda * (y1y2/sqrtXY);
+    JacobianLocal[4][0] = Math.sign((dy0 + y0)*(dxA - dxB + xA - xB) - (dx0 + x0)*(dyA - dyB + yA - yB) - (dxA + xA)*(dyB + yB) + (dxB + xB)*(dyA + yA))*(dx0 - dxA + x0 - xA) + (Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2)*(2*dyA - 2*dyB + 2*yA - 2*yB))/(2*Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2));
+    JacobianLocal[4][1] = -lambda*(Math.sign((dy0 + y0)*(dxA - dxB + xA - xB) - (dx0 + x0)*(dyA - dyB + yA - yB) - (dxA + xA)*(dyB + yB) + (dxB + xB)*(dyA + yA)) - 2*dirac((dy0 + y0)*(dxA - dxB + xA - xB) - (dx0 + x0)*(dyA - dyB + yA - yB) - (dxA + xA)*(dyB + yB) + (dxB + xB)*(dyA + yA))*(dx0 - dxA + x0 - xA)*(dy0 - dyB + y0 - yB) + (Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2)*(2*dxA - 2*dxB + 2*xA - 2*xB)*(2*dyA - 2*dyB + 2*yA - 2*yB))/(4*Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),3/2)));
+    JacobianLocal[4][2] = -lambda*(2*dirac((dy0 + y0)*(dxA - dxB + xA - xB) - (dx0 + x0)*(dyA - dyB + yA - yB) - (dxA + xA)*(dyB + yB) + (dxB + xB)*(dyA + yA))*(dx0 - dxA + x0 - xA)*(dx0 - dxB + x0 - xB) - Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2)/Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2) + (Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2)*Math.pow((2*dyA - 2*dyB + 2*yA - 2*yB),2))/(4*Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),3/2)));
+    JacobianLocal[4][3] = -lambda*(2*dirac((dy0 + y0)*(dxA - dxB + xA - xB) - (dx0 + x0)*(dyA - dyB + yA - yB) - (dxA + xA)*(dyB + yB) + (dxB + xB)*(dyA + yA))*(dx0 - dxA + x0 - xA)*(dy0 - dyA + y0 - yA) - (Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2)*(2*dxA - 2*dxB + 2*xA - 2*xB)*(2*dyA - 2*dyB + 2*yA - 2*yB))/(4*Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),3/2)));
+    JacobianLocal[4][4] = lambda*(2*dirac((dy0 + y0)*(dxA - dxB + xA - xB) - (dx0 + x0)*(dyA - dyB + yA - yB) - (dxA + xA)*(dyB + yB) + (dxB + xB)*(dyA + yA))*Math.pow((dx0 - dxA + x0 - xA),2) - Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2)/Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2) + (Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2)*Math.pow((2*dyA - 2*dyB + 2*yA - 2*yB),2))/(4*Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),3/2)));
+    JacobianLocal[4][5] = lambda*(Math.sign((dy0 + y0)*(dxA - dxB + xA - xB) - (dx0 + x0)*(dyA - dyB + yA - yB) - (dxA + xA)*(dyB + yB) + (dxB + xB)*(dyA + yA)) - 2*dirac((dy0 + y0)*(dxA - dxB + xA - xB) - (dx0 + x0)*(dyA - dyB + yA - yB) - (dxA + xA)*(dyB + yB) + (dxB + xB)*(dyA + yA))*(dx0 - dxA + x0 - xA)*(dyA - dyB + yA - yB) + ((2*dx0 - 2*dx1 + 2*x0 - 2*x1)*(2*dyA - 2*dyB + 2*yA - 2*yB))/(4*Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2)*Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2)));
+    JacobianLocal[4][6] = lambda*(2*dirac((dy0 + y0)*(dxA - dxB + xA - xB) - (dx0 + x0)*(dyA - dyB + yA - yB) - (dxA + xA)*(dyB + yB) + (dxB + xB)*(dyA + yA))*(dx0 - dxA + x0 - xA)*(dxA - dxB + xA - xB) + ((2*dy0 - 2*dy1 + 2*y0 - 2*y1)*(2*dyA - 2*dyB + 2*yA - 2*yB))/(4*Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2)*Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2)));
+    JacobianLocal[4][7] = -(lambda*(2*dx0 - 2*dx1 + 2*x0 - 2*x1)*(2*dyA - 2*dyB + 2*yA - 2*yB))/(4*Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2)*Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2));
+    JacobianLocal[4][8] = -(lambda*(2*dy0 - 2*dy1 + 2*y0 - 2*y1)*(2*dyA - 2*dyB + 2*yA - 2*yB))/(4*Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2)*Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2));
+
+    JacobianLocal[5][0] = - Math.sign((dy0 + y0)*(dxA - dxB + xA - xB) - (dx0 + x0)*(dyA - dyB + yA - yB) - (dxA + xA)*(dyB + yB) + (dxB + xB)*(dyA + yA))*(dyA - dyB + yA - yB) - (Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2)*(2*dx0 - 2*dx1 + 2*x0 - 2*x1))/(2*Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2));
+    JacobianLocal[5][1] = -lambda*(2*dirac((dy0 + y0)*(dxA - dxB + xA - xB) - (dx0 + x0)*(dyA - dyB + yA - yB) - (dxA + xA)*(dyB + yB) + (dxB + xB)*(dyA + yA))*(dy0 - dyB + y0 - yB)*(dyA - dyB + yA - yB) + ((2*dx0 - 2*dx1 + 2*x0 - 2*x1)*(2*dxA - 2*dxB + 2*xA - 2*xB))/(4*Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2)*Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2)));
+    JacobianLocal[5][2] = -lambda*(Math.sign((dy0 + y0)*(dxA - dxB + xA - xB) - (dx0 + x0)*(dyA - dyB + yA - yB) - (dxA + xA)*(dyB + yB) + (dxB + xB)*(dyA + yA)) - 2*dirac((dy0 + y0)*(dxA - dxB + xA - xB) - (dx0 + x0)*(dyA - dyB + yA - yB) - (dxA + xA)*(dyB + yB) + (dxB + xB)*(dyA + yA))*(dx0 - dxB + x0 - xB)*(dyA - dyB + yA - yB) + ((2*dx0 - 2*dx1 + 2*x0 - 2*x1)*(2*dyA - 2*dyB + 2*yA - 2*yB))/(4*Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2)*Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2)));
+    JacobianLocal[5][3] = lambda*(2*dirac((dy0 + y0)*(dxA - dxB + xA - xB) - (dx0 + x0)*(dyA - dyB + yA - yB) - (dxA + xA)*(dyB + yB) + (dxB + xB)*(dyA + yA))*(dy0 - dyA + y0 - yA)*(dyA - dyB + yA - yB) + ((2*dx0 - 2*dx1 + 2*x0 - 2*x1)*(2*dxA - 2*dxB + 2*xA - 2*xB))/(4*Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2)*Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2)));
+    JacobianLocal[5][4] = lambda*(Math.sign((dy0 + y0)*(dxA - dxB + xA - xB) - (dx0 + x0)*(dyA - dyB + yA - yB) - (dxA + xA)*(dyB + yB) + (dxB + xB)*(dyA + yA)) - 2*dirac((dy0 + y0)*(dxA - dxB + xA - xB) - (dx0 + x0)*(dyA - dyB + yA - yB) - (dxA + xA)*(dyB + yB) + (dxB + xB)*(dyA + yA))*(dx0 - dxA + x0 - xA)*(dyA - dyB + yA - yB) + ((2*dx0 - 2*dx1 + 2*x0 - 2*x1)*(2*dyA - 2*dyB + 2*yA - 2*yB))/(4*Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2)*Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2)));
+    JacobianLocal[5][5] = lambda*(2*dirac((dy0 + y0)*(dxA - dxB + xA - xB) - (dx0 + x0)*(dyA - dyB + yA - yB) - (dxA + xA)*(dyB + yB) + (dxB + xB)*(dyA + yA))*Math.pow((dyA - dyB + yA - yB),2) - Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2)/Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2) + (Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2)*Math.pow((2*dx0 - 2*dx1 + 2*x0 - 2*x1),2))/(4*Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),3/2)));
+    JacobianLocal[5][6] = -lambda*(2*dirac((dy0 + y0)*(dxA - dxB + xA - xB) - (dx0 + x0)*(dyA - dyB + yA - yB) - (dxA + xA)*(dyB + yB) + (dxB + xB)*(dyA + yA))*(dxA - dxB + xA - xB)*(dyA - dyB + yA - yB) - (Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2)*(2*dx0 - 2*dx1 + 2*x0 - 2*x1)*(2*dy0 - 2*dy1 + 2*y0 - 2*y1))/(4*Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),3/2)));
+    JacobianLocal[5][7] = lambda*(Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2)/Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2) - (Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2)*Math.pow((2*dx0 - 2*dx1 + 2*x0 - 2*x1),2))/(4*Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),3/2)));
+    JacobianLocal[5][8] = -(lambda*Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2)*(2*dx0 - 2*dx1 + 2*x0 - 2*x1)*(2*dy0 - 2*dy1 + 2*y0 - 2*y1))/(4*Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),3/2));
+
+    JacobianLocal[6][0] = Math.sign((dy0 + y0)*(dxA - dxB + xA - xB) - (dx0 + x0)*(dyA - dyB + yA - yB) - (dxA + xA)*(dyB + yB) + (dxB + xB)*(dyA + yA))*(dxA - dxB + xA - xB) - (Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2)*(2*dy0 - 2*dy1 + 2*y0 - 2*y1))/(2*Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2));
+    JacobianLocal[6][1] = lambda*(Math.sign((dy0 + y0)*(dxA - dxB + xA - xB) - (dx0 + x0)*(dyA - dyB + yA - yB) - (dxA + xA)*(dyB + yB) + (dxB + xB)*(dyA + yA)) + 2*dirac((dy0 + y0)*(dxA - dxB + xA - xB) - (dx0 + x0)*(dyA - dyB + yA - yB) - (dxA + xA)*(dyB + yB) + (dxB + xB)*(dyA + yA))*(dxA - dxB + xA - xB)*(dy0 - dyB + y0 - yB) - ((2*dxA - 2*dxB + 2*xA - 2*xB)*(2*dy0 - 2*dy1 + 2*y0 - 2*y1))/(4*Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2)*Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2)));
+    JacobianLocal[6][2] = -lambda*(2*dirac((dy0 + y0)*(dxA - dxB + xA - xB) - (dx0 + x0)*(dyA - dyB + yA - yB) - (dxA + xA)*(dyB + yB) + (dxB + xB)*(dyA + yA))*(dx0 - dxB + x0 - xB)*(dxA - dxB + xA - xB) + ((2*dy0 - 2*dy1 + 2*y0 - 2*y1)*(2*dyA - 2*dyB + 2*yA - 2*yB))/(4*Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2)*Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2)));
+    JacobianLocal[6][3] = -lambda*(Math.sign((dy0 + y0)*(dxA - dxB + xA - xB) - (dx0 + x0)*(dyA - dyB + yA - yB) - (dxA + xA)*(dyB + yB) + (dxB + xB)*(dyA + yA)) + 2*dirac((dy0 + y0)*(dxA - dxB + xA - xB) - (dx0 + x0)*(dyA - dyB + yA - yB) - (dxA + xA)*(dyB + yB) + (dxB + xB)*(dyA + yA))*(dxA - dxB + xA - xB)*(dy0 - dyA + y0 - yA) - ((2*dxA - 2*dxB + 2*xA - 2*xB)*(2*dy0 - 2*dy1 + 2*y0 - 2*y1))/(4*Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2)*Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2)));
+    JacobianLocal[6][4] = lambda*(2*dirac((dy0 + y0)*(dxA - dxB + xA - xB) - (dx0 + x0)*(dyA - dyB + yA - yB) - (dxA + xA)*(dyB + yB) + (dxB + xB)*(dyA + yA))*(dx0 - dxA + x0 - xA)*(dxA - dxB + xA - xB) + ((2*dy0 - 2*dy1 + 2*y0 - 2*y1)*(2*dyA - 2*dyB + 2*yA - 2*yB))/(4*Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2)*Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2)));
+    JacobianLocal[6][5] = -lambda*(2*dirac((dy0 + y0)*(dxA - dxB + xA - xB) - (dx0 + x0)*(dyA - dyB + yA - yB) - (dxA + xA)*(dyB + yB) + (dxB + xB)*(dyA + yA))*(dxA - dxB + xA - xB)*(dyA - dyB + yA - yB) - (Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2)*(2*dx0 - 2*dx1 + 2*x0 - 2*x1)*(2*dy0 - 2*dy1 + 2*y0 - 2*y1))/(4*Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),3/2)));
+    JacobianLocal[6][6] = lambda*(2*dirac((dy0 + y0)*(dxA - dxB + xA - xB) - (dx0 + x0)*(dyA - dyB + yA - yB) - (dxA + xA)*(dyB + yB) + (dxB + xB)*(dyA + yA))*Math.pow((dxA - dxB + xA - xB),2) - Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2)/Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2) + (Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2)*Math.pow((2*dy0 - 2*dy1 + 2*y0 - 2*y1),2))/(4*Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),3/2)));
+    JacobianLocal[6][7] = -(lambda*Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2)*(2*dx0 - 2*dx1 + 2*x0 - 2*x1)*(2*dy0 - 2*dy1 + 2*y0 - 2*y1))/(4*Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),3/2));
+    JacobianLocal[6][8] = lambda*(Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2)/Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2) - (Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2)*Math.pow((2*dy0 - 2*dy1 + 2*y0 - 2*y1),2))/(4*Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),3/2)));
+
+    JacobianLocal[7][0] = (Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2)*(2*dx0 - 2*dx1 + 2*x0 - 2*x1))/(2*Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2));
+    JacobianLocal[7][1] = (lambda*(2*dx0 - 2*dx1 + 2*x0 - 2*x1)*(2*dxA - 2*dxB + 2*xA - 2*xB))/(4*Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2)*Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2));
+    JacobianLocal[7][2] = (lambda*(2*dx0 - 2*dx1 + 2*x0 - 2*x1)*(2*dyA - 2*dyB + 2*yA - 2*yB))/(4*Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2)*Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2));
+    JacobianLocal[7][3] = -(lambda*(2*dx0 - 2*dx1 + 2*x0 - 2*x1)*(2*dxA - 2*dxB + 2*xA - 2*xB))/(4*Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2)*Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2));
+    JacobianLocal[7][4] = -(lambda*(2*dx0 - 2*dx1 + 2*x0 - 2*x1)*(2*dyA - 2*dyB + 2*yA - 2*yB))/(4*Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2)*Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2));
+    JacobianLocal[7][5] = (lambda*Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2))/Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2) - (lambda*Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2)*Math.pow((2*dx0 - 2*dx1 + 2*x0 - 2*x1),2))/(4*Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),3/2));
+    JacobianLocal[7][6] = -(lambda*Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2)*(2*dx0 - 2*dx1 + 2*x0 - 2*x1)*(2*dy0 - 2*dy1 + 2*y0 - 2*y1))/(4*Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),3/2));
+    JacobianLocal[7][7] = (lambda*Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2)*Math.pow((2*dx0 - 2*dx1 + 2*x0 - 2*x1),2))/(4*Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),3/2)) - (lambda*Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2))/Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2);
+    JacobianLocal[7][8] = (lambda*Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2)*(2*dx0 - 2*dx1 + 2*x0 - 2*x1)*(2*dy0 - 2*dy1 + 2*y0 - 2*y1))/(4*Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),3/2));
+
+    JacobianLocal[8][0] = (Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2)*(2*dy0 - 2*dy1 + 2*y0 - 2*y1))/(2*Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2));
+    JacobianLocal[8][1] = (lambda*(2*dxA - 2*dxB + 2*xA - 2*xB)*(2*dy0 - 2*dy1 + 2*y0 - 2*y1))/(4*Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2)*Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2));
+    JacobianLocal[8][2] = (lambda*(2*dy0 - 2*dy1 + 2*y0 - 2*y1)*(2*dyA - 2*dyB + 2*yA - 2*yB))/(4*Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2)*Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2));
+    JacobianLocal[8][3] = -(lambda*(2*dxA - 2*dxB + 2*xA - 2*xB)*(2*dy0 - 2*dy1 + 2*y0 - 2*y1))/(4*Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2)*Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2));
+    JacobianLocal[8][4] = -(lambda*(2*dy0 - 2*dy1 + 2*y0 - 2*y1)*(2*dyA - 2*dyB + 2*yA - 2*yB))/(4*Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2)*Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2));
+    JacobianLocal[8][5] = -(lambda*Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2)*(2*dx0 - 2*dx1 + 2*x0 - 2*x1)*(2*dy0 - 2*dy1 + 2*y0 - 2*y1))/(4*Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),3/2));
+    JacobianLocal[8][6] = (lambda*Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2))/Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2) - (lambda*Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2)*Math.pow((2*dy0 - 2*dy1 + 2*y0 - 2*y1),2))/(4*Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),3/2));
+    JacobianLocal[8][7] = (lambda*Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2)*(2*dx0 - 2*dx1 + 2*x0 - 2*x1)*(2*dy0 - 2*dy1 + 2*y0 - 2*y1))/(4*Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),3/2));
+    JacobianLocal[8][8] = (lambda*Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2)*Math.pow((2*dy0 - 2*dy1 + 2*y0 - 2*y1),2))/(4*Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),3/2)) - (lambda*Math.pow((Math.pow((dxA - dxB + xA - xB),2) + Math.pow((dyA - dyB + yA - yB),2)),1/2))/Math.pow((Math.pow((dx0 - dx1 + x0 - x1),2) + Math.pow((dy0 - dy1 + y0 - y1),2)),1/2);
 
     return({axisLocal, JacobianLocal, F_Local, dim, localToGlobal});
 }
