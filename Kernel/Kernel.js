@@ -512,13 +512,6 @@ class Kernel {
                                 elementUsedInConstraints.dFi1 = true
                             }
                             break;
-                        case ConstraintsTypes.LENGTH_TOTAL:
-                            if (elementUsedInConstraints.type == ElementTypes.ARC) {
-                                elementUsedInConstraints.dFi1 = true;
-                                elementUsedInConstraints.dFi2 = true;
-                                elementUsedInConstraints.dR = true;
-                            }
-                            break;
                     }
                 }
 
@@ -555,6 +548,10 @@ class Kernel {
                     case ConstraintsTypes.LENGTH_TOTAL:
                         for (const element of elementsInConstraint) {
                             if (element.type == ElementTypes.LINE) {
+                                pointsInConstraint.push(element.p1);
+                                pointsInConstraint.push(element.p2);
+                            } else if (element.type == ElementTypes.ARC) {
+                                pointsInConstraint.push(element.p0);
                                 pointsInConstraint.push(element.p1);
                                 pointsInConstraint.push(element.p2);
                             }

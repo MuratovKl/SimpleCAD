@@ -182,16 +182,18 @@
               Равная длина отрезков
             </button>
           </li>
+          <hr>
           <li class="instruments-list__el">
             <button
               @click="selectInstrument"
-              data-number="15"
+              data-number="26"
               class="instrument-btn"
-              :class="{ 'instrument-btn_active': selectedInstrument === 15}"
+              :class="{ 'instrument-btn_active': selectedInstrument === 26}"
             >
-              Длина дуги
+              Длина полилинии (отрезки/дуги)
             </button>
           </li>
+          <hr>
           <li class="instruments-list__el">
             <button
               @click="selectInstrument"
@@ -200,6 +202,16 @@
               :class="{ 'instrument-btn_active': selectedInstrument === 16}"
             >
               Радиус дуги
+            </button>
+          </li>
+          <li class="instruments-list__el">
+            <button
+              @click="selectInstrument"
+              data-number="15"
+              class="instrument-btn"
+              :class="{ 'instrument-btn_active': selectedInstrument === 15}"
+            >
+              Длина дуги
             </button>
           </li>
           <li class="instruments-list__el">
@@ -284,17 +296,6 @@
               </del>
             </button>
           </li>
-          <li class="instruments-list__el">
-            <button
-              @click="selectInstrument"
-              data-number="26"
-              disabled="true"
-              class="instrument-btn"
-              :class="{ 'instrument-btn_active': selectedInstrument === 26}"
-            >
-              Длина кривой, состоящей из нескольких участков (отрезков/дуг)
-            </button>
-          </li>
         </ul>
       </div>
     </div>
@@ -353,12 +354,13 @@ export default {
     document.addEventListener('keydown', (event) => {
       if (event.keyCode === 13) {
         console.log('enter pressed');
-        const answer = parseFloat(prompt('Введите длину:'));
-        if (isNaN(answer)) {
-          // TODO: handle bad answer
+        const answer = prompt('Введите длину:');
+        const length = parseFloat(answer);
+        if (isNaN(length) || length <= 0) {
+          alert('Введено неверное значение длины:' + answer);
           return;
         }
-        this.tmpConstraint.value = answer
+        this.tmpConstraint.value = length
         this.dataLayer.addConstraint(this.tmpConstraint);
         for (const line of this.selectedElementList.lines) {
           line.stroke(defaultElementColor)
