@@ -237,6 +237,26 @@
           <li class="instruments-list__el">
             <button
               @click="selectInstrument"
+              data-number="18"
+              class="instrument-btn"
+              :class="{ 'instrument-btn_active': selectedInstrument === 18}"
+            >
+              Внешнее касание дуг
+            </button>
+          </li>
+          <li class="instruments-list__el">
+            <button
+              @click="selectInstrument"
+              data-number="19"
+              class="instrument-btn"
+              :class="{ 'instrument-btn_active': selectedInstrument === 19}"
+            >
+              Внутреннее касание дуг
+            </button>
+          </li>
+          <li class="instruments-list__el">
+            <button
+              @click="selectInstrument"
               data-number="25"
               disabled="true"
               class="instrument-btn"
@@ -258,28 +278,6 @@
               <del>
                 Совмещение точки и конца дуги
               </del>
-            </button>
-          </li>
-          <li class="instruments-list__el">
-            <button
-              @click="selectInstrument"
-              disabled="true"
-              data-number="18"
-              class="instrument-btn"
-              :class="{ 'instrument-btn_active': selectedInstrument === 18}"
-            >
-              Внешнее касание дуг
-            </button>
-          </li>
-          <li class="instruments-list__el">
-            <button
-              @click="selectInstrument"
-              data-number="19"
-              disabled="true"
-              class="instrument-btn"
-              :class="{ 'instrument-btn_active': selectedInstrument === 19}"
-            >
-              Внутреннее касание дуг
             </button>
           </li>
           <li class="instruments-list__el">
