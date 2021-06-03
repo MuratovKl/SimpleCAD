@@ -31,6 +31,7 @@
               data-number="27"
               class="instrument-btn"
               :class="{ 'instrument-btn_active': selectedInstrument === 27}"
+              title="Вывод параметров объекта (выберите точку/отрезок/дугу)"
             >
               Информация
             </button>
@@ -139,7 +140,7 @@
               class="instrument-btn"
               :class="{ 'instrument-btn_active': selectedInstrument === 10}"
             >
-              Параллельность
+              Параллельность отрезков
             </button>
           </li>
           <li class="instruments-list__el">
@@ -149,7 +150,7 @@
               class="instrument-btn"
               :class="{ 'instrument-btn_active': selectedInstrument === 12}"
             >
-              Перпендикулярность
+              Перпендикулярность отрезков
             </button>
           </li>
           <li class="instruments-list__el">
@@ -189,6 +190,7 @@
               data-number="26"
               class="instrument-btn"
               :class="{ 'instrument-btn_active': selectedInstrument === 26}"
+              title="Выберите все объекты и нажмите 'Enter'"
             >
               Длина полилинии (отрезки/дуги)
             </button>
