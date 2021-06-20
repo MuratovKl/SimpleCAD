@@ -260,13 +260,10 @@
             <button
               @click="selectInstrument"
               data-number="25"
-              disabled="true"
               class="instrument-btn"
               :class="{ 'instrument-btn_active': selectedInstrument === 25}"
             >
-              <del>
-                Перпендикулярность прямой к дуге в точке
-              </del>
+              Перпендикулярность отрезка к радиусу дуги
             </button>
           </li>
           <li class="instruments-list__el">
@@ -310,6 +307,7 @@ import { Constraint } from '../../Constraint';
 import { Arc } from '../../elements/Arc';
 import { Line } from '../../elements/Line';
 import { ConstraintsTypes } from '../../ConstraintsTypes';
+import { ElementTypes } from '../../elements/ElementTypes';
 
 const frameTime = 1; // ms
 const defaultElementColor = '#244CE5';
@@ -577,48 +575,6 @@ export default {
             this.updateDrawing();
             this.tmpConstraint = null;
           }
-        } else if (this.selectedInstrument === 25) {
-          if (!this.tmpConstraint) {
-            let constraint;
-            if (point.relatedArc) {
-              const arc = point.relatedArc;
-              if (point.relatedId == arc.centerPoint.relatedId) {
-                return;
-              }
-
-              const mode = point.relatedId == arc.startPoint.relatedId ? 1 : 2;
-              constraint = new Constraint({ type: ConstraintsTypes.ARC_LINE_PERPENDICULAR, elements: [ arc.relatedArc ], mode });
-            }
-            this.tmpConstraint = constraint;
-            if (point.relatedConstraints[constraint.type]) {
-              point.relatedConstraints[constraint.type].push(constraint);
-            } else {
-              point.relatedConstraints[constraint.type] = [ constraint ];
-            }
-          } else {
-            if (point.relatedArc) {
-              const arc = point.relatedArc;
-              if (point.relatedId == arc.centerPoint.relatedId) {
-                this.tmpConstraint = null;
-                return;
-              }
-              if (this.tmpConstraint.elements) {
-                this.tmpConstraint.points = [ point.relatedPoint ];
-              } else {
-                this.tmpConstraint.elements = [ point.relatedArc.relatedArc ];
-                const mode = point.relatedId == arc.startPoint.relatedId ? 1 : 2;
-                this.tmpConstraint.mode = mode;
-              }
-            }
-            this.dataLayer.addConstraint(this.tmpConstraint);
-            if (point.relatedConstraints[this.tmpConstraint.type]) {
-              point.relatedConstraints[this.tmpConstraint.type].push(this.tmpConstraint);
-            } else {
-              point.relatedConstraints[this.tmpConstraint.type] = [ this.tmpConstraint ];
-            }
-            this.updateDrawing();
-            this.tmpConstraint = null;
-          }
         } else if (this.selectedInstrument === 27) {
           const pointId = point.relatedId;
           const pointInfo = this.dataLayer.getPointInfo(pointId);
@@ -843,6 +799,15 @@ export default {
       arc.startPoint.y(p1.y);
       arc.endPoint.x(p2.x);
       arc.endPoint.y(p2.y);
+
+      arc.relatedRadiusStartLine.points()[0] = p0.x;
+      arc.relatedRadiusStartLine.points()[1] = p0.y;
+      arc.relatedRadiusStartLine.points()[2] = p1.x;
+      arc.relatedRadiusStartLine.points()[3] = p1.y;
+      arc.relatedRadiusEndLine.points()[0] = p0.x;
+      arc.relatedRadiusEndLine.points()[1] = p0.y;
+      arc.relatedRadiusEndLine.points()[2] = p2.x;
+      arc.relatedRadiusEndLine.points()[3] = p2.y;
 
       this.layer.draw();
     },
@@ -1116,28 +1081,54 @@ export default {
             this.tmpConstraint = null;
           }
         } else if (this.selectedInstrument === 25) {
-          if (!this.tmpConstraint) {
-            const constraint = new Constraint({ type: ConstraintsTypes.ARC_LINE_PERPENDICULAR, lines: [[ line.startPoint.relatedPoint, line.endPoint.relatedPoint ]] });
-            this.tmpConstraint = constraint;
-            if (line.relatedConstraints[constraint.type]) {
-              line.relatedConstraints[constraint.type].push(constraint);
+          if (line.relatedArc == null) {
+            if (!this.tmpConstraint) {
+              const constraint = new Constraint({ type: ConstraintsTypes.ARC_LINE_PERPENDICULAR, lines: [[ line.startPoint.relatedPoint, line.endPoint.relatedPoint ]] });
+              this.tmpConstraint = constraint;
+              if (line.relatedConstraints[constraint.type]) {
+                line.relatedConstraints[constraint.type].push(constraint);
+              } else {
+                line.relatedConstraints[constraint.type] = [ constraint ];
+              }
             } else {
-              line.relatedConstraints[constraint.type] = [ constraint ];
+              if (this.tmpConstraint.elements[0].type === ElementTypes.LINE) {
+                this.tmpConstraint = null;
+                return;
+              }
+              this.tmpConstraint.lines = [[ line.startPoint.relatedPoint, line.endPoint.relatedPoint ]];
+              this.dataLayer.addConstraint(this.tmpConstraint);
+              if (line.relatedConstraints[this.tmpConstraint.type]) {
+                line.relatedConstraints[this.tmpConstraint.type].push(this.tmpConstraint);
+              } else {
+                line.relatedConstraints[this.tmpConstraint.type] = [ this.tmpConstraint ];
+              }
+              this.updateDrawing();
+              this.tmpConstraint = null;
             }
           } else {
-            if (this.tmpConstraint.lines) {
-              this.tmpConstraint = null;
+            const relatedArc = line.relatedArc.relatedArc;
+            let mode = 0;
+            if (line.isArcStart) {
+              mode = 1;
+            } else if (line.isArcEnd) {
+              mode = 2;
+            } else {
               return;
             }
-            this.tmpConstraint.lines = [[ line.startPoint.relatedPoint, line.endPoint.relatedPoint ]];
-            this.dataLayer.addConstraint(this.tmpConstraint);
-            if (line.relatedConstraints[this.tmpConstraint.type]) {
-              line.relatedConstraints[this.tmpConstraint.type].push(this.tmpConstraint);
+            if (!this.tmpConstraint) {
+              const constraint = new Constraint({ type: ConstraintsTypes.ARC_LINE_PERPENDICULAR, elements: [relatedArc], mode });
+              this.tmpConstraint = constraint;
             } else {
-              line.relatedConstraints[this.tmpConstraint.type] = [ this.tmpConstraint ];
+              if (this.tmpConstraint.elements[0].type === ElementTypes.ARC) {
+                this.tmpConstraint = null;
+                return;
+              }
+              this.tmpConstraint.elements = [relatedArc];            
+              this.tmpConstraint.mode = mode;
+              this.dataLayer.addConstraint(this.tmpConstraint);
+              this.updateDrawing();
+              this.tmpConstraint = null;
             }
-            this.updateDrawing();
-            this.tmpConstraint = null;
           }
         } else if (this.selectedInstrument === 26) {
           if (!this.tmpConstraint) {
@@ -1556,8 +1547,22 @@ export default {
             arc.endPoint = eP;
             arc.relatedConstraints = {};
 
+            const radiusStartLine = new Konva.Line({
+              points: [centerPoint.x(), centerPoint.y(), startPoint.x(), startPoint.y()],
+              stroke: defaultElementColor,
+              strokeWidth: 3,
+              draggable: false,
+              dash: [16, 9],
+            });
+            radiusStartLine.isConstructionLine = true;
+            radiusStartLine.isArcStart = true;
+            radiusStartLine.relatedArc = arc;
+            arc.relatedRadiusStartLine = radiusStartLine;
+            this.setLineEvents(radiusStartLine);
+
             this.layer.add(eP);
             this.layer.add(arc);
+            this.layer.add(radiusStartLine);
             this.layer.draw();
             this.arcDrawingStage = 2;
           } else if (this.arcDrawingStage == 2) {
@@ -1575,6 +1580,22 @@ export default {
             arc.relatedId = arcModel.id;
             this.setArcEvents(arc);
             this.dataLayer.addArc(arcModel);
+
+            const radiusEndLine = new Konva.Line({
+              points: [p0.x, p0.y, p2.x, p2.y],
+              stroke: defaultElementColor,
+              strokeWidth: 3,
+              draggable: false,
+              dash: [16, 9],
+            });
+            radiusEndLine.isConstructionLine = true;
+            radiusEndLine.isArcEnd = true;
+            radiusEndLine.relatedArc = arc;
+            arc.relatedRadiusEndLine = radiusEndLine;
+            this.setLineEvents(radiusEndLine);
+            this.layer.add(radiusEndLine);
+            this.layer.draw();
+
             this.arcDrawingStage = 0;
           }
         }

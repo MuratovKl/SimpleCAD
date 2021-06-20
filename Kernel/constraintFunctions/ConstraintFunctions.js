@@ -1952,17 +1952,32 @@ function getDerivativeFunction_ArcPointFix(constraint, unknowns, axisGlobal) {
  * @returns {Object} Object with axis names, local Jacobian and local vector F
  */
 function getDerivativeFunction_ArcLinePerpendicular(constraint, unknowns, axisGlobal) {
-    const dim = 6;
-    
-    const axisLocal = [];
-    axisLocal.push('lambda_' + constraint.id)
-    axisLocal.push('dx_' + constraint.lines[0][0].id);
-    axisLocal.push('dy_' + constraint.lines[0][0].id);
-    axisLocal.push('dx_' + constraint.lines[0][1].id);
-    axisLocal.push('dy_' + constraint.lines[0][1].id);
-    const fiNum = constraint.mode === 2 ? 2 : 1;
-    axisLocal.push('dFi' + fiNum + '_' + constraint.elements[0].id + '_' + constraint.elements[0].type)
 
+    const arc = constraint.elements[0];
+    const line = constraint.lines[0];
+
+    let arcRadiusPoint = null;
+    if (constraint.mode == 1) {
+        arcRadiusPoint = arc.p1;
+    } else if (constraint.mode == 2) {
+        arcRadiusPoint = arc.p2;
+    }
+    if (arcRadiusPoint == null) {
+        throw new Error("getDerivativeFunction_ArcLinePerpendicular: mode isn't defined")
+    }
+
+    const dim = 9;
+
+    const axisLocal = [];
+    axisLocal.push('lambda_' + constraint.id);
+    axisLocal.push('dx_' + line[0].id);
+    axisLocal.push('dy_' + line[0].id);
+    axisLocal.push('dx_' + line[1].id);
+    axisLocal.push('dy_' + line[1].id);
+    axisLocal.push('dx_' + arc.p0.id);
+    axisLocal.push('dy_' + arc.p0.id);
+    axisLocal.push('dx_' + arcRadiusPoint.id);
+    axisLocal.push('dy_' + arcRadiusPoint.id);
     const localToGlobal = new Array(dim);
     for (let i = 0; i < dim; i++) {
         localToGlobal[i] = axisGlobal.indexOf(axisLocal[i]);
@@ -1977,79 +1992,86 @@ function getDerivativeFunction_ArcLinePerpendicular(constraint, unknowns, axisGl
             JacobianLocal[i][j] = 0;
         }
     }
-
-    const arc = constraint.elements[0];
-    let fi;
-    switch (constraint.mode) {
-        case 1:
-            fi = arc.fi1;
-            break;
-        case 2:
-            fi = arc.fi2;
-            break;
-        default:
-            fi = arc.fi1;
-            break;
-    }
-
-    if (arc.angleMode && arc.angleMode == 'DEG') {
-        fi *= Math.PI / 180;
-    }
-  
-    const line = constraint.lines[0];
     
-    const xs = line[0].x;
-    const ys = line[0].y;
-    const xf = line[1].x;
-    const yf = line[1].y
+    const x1_s = line[0].x;
+    const y1_s = line[0].y;
+    const x1_f = line[1].x;
+    const y1_f = line[1].y
+    const x2_s = arc.p0.x;
+    const y2_s = arc.p0.y;
+    const x2_f = arcRadiusPoint.x;
+    const y2_f = arcRadiusPoint.y;
 
     const lambda = unknowns[localToGlobal[0]];
-    const dxs = unknowns[localToGlobal[1]];
-    const dys = unknowns[localToGlobal[2]];
-    const dxf = unknowns[localToGlobal[3]];
-    const dyf = unknowns[localToGlobal[4]];
-    const dFi = unknowns[localToGlobal[5]];
+    const dx1_s = unknowns[localToGlobal[1]];
+    const dy1_s = unknowns[localToGlobal[2]];
+    const dx1_f = unknowns[localToGlobal[3]];
+    const dy1_f = unknowns[localToGlobal[4]];
+    const dx2_s = unknowns[localToGlobal[5]];
+    const dy2_s = unknowns[localToGlobal[6]];
+    const dx2_f = unknowns[localToGlobal[7]];
+    const dy2_f = unknowns[localToGlobal[8]];
+    
+    const a_ = x2_s + dx2_s - x2_f - dx2_f;
+    const b_ = y2_s + dy2_s - y2_f - dy2_f;
+    const c_ = -x2_s - dx2_s + x2_f + dx2_f;
+    const d_ = -y2_s - dy2_s + y2_f + dy2_f;
+    const e_ = x1_s + dx1_s - x1_f - dx1_f;
+    const f_ = y1_s + dy1_s - y1_f - dy1_f;
+    const g_ = -x1_s - dx1_s + x1_f + dx1_f;
+    const h_ = -y1_s - dy1_s + y1_f + dy1_f;
 
-    const sinFi = Math.sin(fi+dFi);
-    const cosFi = Math.cos(fi+dFi);
-
-    const a_ = -1 * cosFi;
-    const b_ = -1 * sinFi;
-    const c_ = cosFi;
-    const d_ = sinFi;
-    const e_ = (xf + dxf - xs - dxs)*-1*sinFi + (yf + dyf - ys - dys) * cosFi;
-
-    F_Local[0] = (xf + dxf -xs - dxs) * cosFi + (yf + dyf - ys - dys)*sinFi;
+    // X1 * X2 - Y1 * Y2
+    F_Local[0] = (x1_f + dx1_f - x1_s - dx1_s)*(x2_f + dx2_f - x2_s - dx2_s) + (y1_f + dy1_f - y1_s - dy1_s)*(y2_f + dy2_f - y2_s - dy2_s);
     F_Local[1] = lambda * a_;
     F_Local[2] = lambda * b_;
     F_Local[3] = lambda * c_;
     F_Local[4] = lambda * d_;
     F_Local[5] = lambda * e_;
+    F_Local[6] = lambda * f_;
+    F_Local[7] = lambda * g_;
+    F_Local[8] = lambda * h_;
 
     JacobianLocal[0][1] = a_;
     JacobianLocal[0][2] = b_;
     JacobianLocal[0][3] = c_;
     JacobianLocal[0][4] = d_;
     JacobianLocal[0][5] = e_;
+    JacobianLocal[0][6] = f_;
+    JacobianLocal[0][7] = g_
+    JacobianLocal[0][8] = h_;
 
     JacobianLocal[1][0] = a_;
-    JacobianLocal[1][5] = lambda * sinFi;
+    JacobianLocal[1][5] = lambda;
+    JacobianLocal[1][7] = -lambda;
     
     JacobianLocal[2][0] = b_;
-    JacobianLocal[2][5] = -lambda * cosFi;
-    
+    JacobianLocal[2][6] = lambda;
+    JacobianLocal[2][8] = -lambda;
+
     JacobianLocal[3][0] = c_;
-    JacobianLocal[3][5] = -lambda * sinFi;
-
+    JacobianLocal[3][5] = -lambda;
+    JacobianLocal[3][7] = lambda;
+    
     JacobianLocal[4][0] = d_;
-    JacobianLocal[4][5] = lambda * cosFi;
-
+    JacobianLocal[4][6] = -lambda;
+    JacobianLocal[4][8] = lambda;
+    
     JacobianLocal[5][0] = e_;
-    JacobianLocal[5][1] = lambda * sinFi;
-    JacobianLocal[5][2] = -lambda * cosFi;
-    JacobianLocal[5][3] = -lambda * sinFi;
-    JacobianLocal[5][4] = lambda * cosFi;
-    JacobianLocal[5][5] = lambda * ((xf + dxf - xs - dxs)*cosFi - (yf + dyf - ys - dys)*sinFi);
+    JacobianLocal[5][1] = lambda;
+    JacobianLocal[5][3] = -lambda;
+    
+    JacobianLocal[6][0] = f_;
+    JacobianLocal[6][2] = lambda;
+    JacobianLocal[6][4] = -lambda;
+
+    JacobianLocal[7][0] = g_;
+    JacobianLocal[7][1] = -lambda;
+    JacobianLocal[7][3] = lambda;
+
+    JacobianLocal[8][0] = h_;
+    JacobianLocal[8][2] = -lambda;
+    JacobianLocal[8][4] = lambda;
 
     return({axisLocal, JacobianLocal, F_Local, dim, localToGlobal});
 }

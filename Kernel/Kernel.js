@@ -452,17 +452,17 @@ class Kernel {
                 axisGlobal.push('dy_' + point.id);
             }
         }
-        for (let element of elementsUsedInConstraints) {
-            if (element.dR) {
-                axisGlobal.push('dR_' + element.id + '_' + element.type);
-            }
-            if (element.dFi1) {
-                axisGlobal.push('dFi1_' + element.id + '_' + element.type);
-            }
-            if (element.dFi2) {
-                axisGlobal.push('dFi2_' + element.id + '_' + element.type);
-            }
-        }
+        // for (let element of elementsUsedInConstraints) {
+        //     if (element.dR) {
+        //         axisGlobal.push('dR_' + element.id + '_' + element.type);
+        //     }
+        //     if (element.dFi1) {
+        //         axisGlobal.push('dFi1_' + element.id + '_' + element.type);
+        //     }
+        //     if (element.dFi2) {
+        //         axisGlobal.push('dFi2_' + element.id + '_' + element.type);
+        //     }
+        // }
     }
 
     /**
@@ -499,13 +499,13 @@ class Kernel {
                                 elementUsedInConstraints.dFi1 = true
                             }
                             break;
-                        case ConstraintsTypes.ARC_LINE_PERPENDICULAR:
-                            if (constraint.mode === 2) {
-                                elementUsedInConstraints.dFi2 = true;
-                            } else {
-                                elementUsedInConstraints.dFi1 = true
-                            }
-                            break;
+                        // case ConstraintsTypes.ARC_LINE_PERPENDICULAR:
+                        //     if (constraint.mode === 2) {
+                        //         elementUsedInConstraints.dFi2 = true;
+                        //     } else {
+                        //         elementUsedInConstraints.dFi1 = true
+                        //     }
+                        //     break;
                     }
                 }
 
@@ -535,6 +535,19 @@ class Kernel {
                         pointsInConstraint.push(constraint.elements[0].p1);
                         pointsInConstraint.push(constraint.elements[1].p0);
                         pointsInConstraint.push(constraint.elements[1].p1);
+                        break;
+                    case ConstraintsTypes.ARC_LINE_PERPENDICULAR:
+                        let arcRadiusPoint = null;
+                        if (constraint.mode == 1) {
+                            arcRadiusPoint = constraint.elements[0].p1;
+                        } else if (constraint.mode == 2) {
+                            arcRadiusPoint = constraint.elements[0].p2;
+                        }
+                        if (arcRadiusPoint == null) {
+                            throw new Error("_elementsUsedInConstraints: mode isn't defined")
+                        }
+                        pointsInConstraint.push(constraint.elements[0].p0);
+                        pointsInConstraint.push(arcRadiusPoint);
                         break;
                     case ConstraintsTypes.ARC_POINT_COINCIDENT:
                         pointsInConstraint.push(constraint.elements[0].center);
@@ -575,6 +588,10 @@ class Kernel {
                             pointUsedInConstraints.dy = true;
                             break;
                         case ConstraintsTypes.ARC_TANGENT_ToArc:
+                            pointUsedInConstraints.dx = true;
+                            pointUsedInConstraints.dy = true;
+                            break;
+                        case ConstraintsTypes.ARC_LINE_PERPENDICULAR:
                             pointUsedInConstraints.dx = true;
                             pointUsedInConstraints.dy = true;
                             break;

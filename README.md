@@ -48,6 +48,7 @@ Example:
     Constraint({type: ConstraintsTypes.ARC_TANGENT_ToLine, elements:[arc1], lines: [[point3, point2]]});
     Constraint({type: ConstraintsTypes.ARC_POINT_COINCIDENT, elements:[arc1], points: [point2], mode: 1}); // mode: 1|2
     Constraint({type: ConstraintsTypes.ARC_POINT_FIX, elements:[arc1], mode: 1}); // mode: 1|2
+    Constraint({type: ConstraintsTypes.ARC_LINE_PERPENDICULAR, elements:[arc1], lines: [[point3, point2]], mode: 1}); // mode: 1 - start point of arc, 2 - end point of arc
 
     //  Сomplex
     Constraint({type: ConstraintsTypes.LENGTH_TOTAL, elements: [line1, arc1, line2], value: 250})
