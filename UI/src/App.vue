@@ -1091,7 +1091,7 @@ export default {
                 line.relatedConstraints[constraint.type] = [ constraint ];
               }
             } else {
-              if (this.tmpConstraint.elements[0].type === ElementTypes.LINE) {
+              if (this.tmpConstraint.lines) {
                 this.tmpConstraint = null;
                 return;
               }
@@ -1119,7 +1119,7 @@ export default {
               const constraint = new Constraint({ type: ConstraintsTypes.ARC_LINE_PERPENDICULAR, elements: [relatedArc], mode });
               this.tmpConstraint = constraint;
             } else {
-              if (this.tmpConstraint.elements[0].type === ElementTypes.ARC) {
+              if (this.tmpConstraint.elements) {
                 this.tmpConstraint = null;
                 return;
               }
