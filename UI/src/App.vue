@@ -11,21 +11,24 @@
               data-number="1"
               class="instrument-btn"
               :class="{ 'instrument-btn_active': selectedInstrument === 1}"
+              title="Перемещение"
             >
-              Перемещение
+            <img
+              aria-hidden="true"
+              src="./assets/move.svg"
+              alt="move"/>
             </button>
-          </li>
-          <li class="instruments-list__el">
             <button
               @click="selectInstrument"
               data-number="2"
               class="instrument-btn"
               :class="{ 'instrument-btn_active': selectedInstrument === 2}"
+              title="Удаление"
             >
-              Удаление
+              <img
+                src="./assets/delete.svg"
+                alt="delete"/>
             </button>
-          </li>
-          <li class="instruments-list__el">
             <button
               @click="selectInstrument"
               data-number="27"
@@ -33,9 +36,15 @@
               :class="{ 'instrument-btn_active': selectedInstrument === 27}"
               title="Вывод параметров объекта (выберите точку/отрезок/дугу)"
             >
-              Информация
+              <img
+                src="./assets/info.svg"
+                alt="info"/>
             </button>
           </li>
+          <!-- <li class="instruments-list__el">
+          </li> -->
+          <!-- <li class="instruments-list__el">
+          </li> -->
           <hr>
           <li class="instruments-list__el">
             <button
@@ -43,30 +52,39 @@
               data-number="3"
               class="instrument-btn"
               :class="{ 'instrument-btn_active': selectedInstrument === 3}"
+              title="Точка"
             >
-              Точка
+              <img
+                src="./assets/point.svg"
+                alt="point"/>
             </button>
-          </li>
-          <li class="instruments-list__el">
             <button
               @click="selectInstrument"
               data-number="4"
               class="instrument-btn"
               :class="{ 'instrument-btn_active': selectedInstrument === 4}"
+              title="Отрезок"
             >
-              Отрезок
+              <img
+                src="./assets/line.svg"
+                alt="line"/>
             </button>
-          </li>
-          <li class="instruments-list__el">
             <button
               @click="selectInstrument"
               data-number="14"
               class="instrument-btn"
               :class="{ 'instrument-btn_active': selectedInstrument === 14}"
+              title="Дуга"
             >
-              Дуга
+              <img
+                src="./assets/arc.svg"
+                alt="arc"/>
             </button>
           </li>
+          <!-- <li class="instruments-list__el">
+          </li> -->
+          <!-- <li class="instruments-list__el">
+          </li> -->
         </ul>
       </div>
       <div class="hr"></div>
@@ -79,122 +97,143 @@
               data-number="5"
               class="instrument-btn"
               :class="{ 'instrument-btn_active': selectedInstrument === 5}"
+              title="Горизонтальность"
             >
-              Горизонтальность
+            <img
+                src="./assets/horizontal.svg"
+                alt="horizontal"/>
             </button>
-          </li>
-          <li class="instruments-list__el">
             <button
               @click="selectInstrument"
               data-number="7"
               class="instrument-btn"
               :class="{ 'instrument-btn_active': selectedInstrument === 7}"
+              title="Вертикальность"
             >
-              Вертикальность
+            <img
+                src="./assets/vertical.svg"
+                alt="vertical"/>
             </button>
           </li>
+          <!-- <li class="instruments-list__el">
+          </li> -->
           <li class="instruments-list__el">
             <button
               @click="selectInstrument"
               data-number="6"
               class="instrument-btn"
               :class="{ 'instrument-btn_active': selectedInstrument === 6}"
+              title="Расстояние между точками / длина отрезка"
             >
-              Расстояние между точками / длина отрезка
+            <img
+                src="./assets/length.svg"
+                alt="length"/>
             </button>
-          </li>
-          <li class="instruments-list__el">
             <button
               @click="selectInstrument"
               data-number="24"
               class="instrument-btn"
               :class="{ 'instrument-btn_active': selectedInstrument === 24}"
+              title="Расстояние между точкой и отрезком"
             >
-              Расстояние между точкой и отрезком
+            <img
+                src="./assets/distance_point_line.svg"
+                alt="distance_point_line"/>
             </button>
           </li>
+          <!-- <li class="instruments-list__el">
+          </li> -->
           <li class="instruments-list__el">
             <button
               @click="selectInstrument"
               data-number="8"
               class="instrument-btn"
               :class="{ 'instrument-btn_active': selectedInstrument === 8}"
+              title="Совмещение точек"
             >
-              Совмещение точек
+            <img
+                src="./assets/coincident.svg"
+                alt="coincident"/>
             </button>
-          </li>
-          <li class="instruments-list__el">
             <button
               @click="selectInstrument"
               data-number="9"
               class="instrument-btn"
               :class="{ 'instrument-btn_active': selectedInstrument === 9}"
+              title="Фиксация точки"
             >
-              Фиксация точки
+            <img
+                src="./assets/fix_point.svg"
+                alt="fix_point"/>
             </button>
           </li>
+          <!-- <li class="instruments-list__el">
+          </li> -->
           <li class="instruments-list__el">
             <button
               @click="selectInstrument"
               data-number="10"
               class="instrument-btn"
               :class="{ 'instrument-btn_active': selectedInstrument === 10}"
+              title="Параллельность отрезков"
             >
-              Параллельность отрезков
+            <img
+              src="./assets/parallel.svg"
+              alt="parallel"/>
             </button>
-          </li>
-          <li class="instruments-list__el">
             <button
               @click="selectInstrument"
               data-number="12"
               class="instrument-btn"
               :class="{ 'instrument-btn_active': selectedInstrument === 12}"
+              title="Перпендикулярность отрезков"
             >
-              Перпендикулярность отрезков
+            <img
+              src="./assets/perpendicular.svg"
+              alt="perpendicular"/>
             </button>
           </li>
+          <!-- <li class="instruments-list__el">
+          </li> -->
           <li class="instruments-list__el">
             <button
               @click="selectInstrument"
               data-number="11"
               class="instrument-btn"
               :class="{ 'instrument-btn_active': selectedInstrument === 11}"
+              title="Угол между отрезками"
             >
-              Угол между отрезками
+            <img
+              src="./assets/angle.svg"
+              alt="angle"/>
             </button>
-          </li>
-          <li class="instruments-list__el">
             <button
               @click="selectInstrument"
               data-number="13"
               class="instrument-btn"
               :class="{ 'instrument-btn_active': selectedInstrument === 13}"
+              title="Точка на прямой"
             >
-              Точка на прямой
+            <img
+              src="./assets/point_on_line.svg"
+              alt="point_on_line"/>
             </button>
-          </li>
-          <li class="instruments-list__el">
             <button
               @click="selectInstrument"
               data-number="23"
               class="instrument-btn"
               :class="{ 'instrument-btn_active': selectedInstrument === 23}"
+              title="Равная длина отрезков"
             >
-              Равная длина отрезков
+            <img
+              src="./assets/equal_lines.svg"
+              alt="equal_lines"/>
             </button>
           </li>
-          <hr>
-          <li class="instruments-list__el">
-            <button
-              @click="selectInstrument"
-              data-number="26"
-              class="instrument-btn"
-              :class="{ 'instrument-btn_active': selectedInstrument === 26}"
-              title="Выберите все объекты и нажмите 'Enter'"
-            >
-              Длина полилинии (отрезки/дуги)
-            </button>
-          </li>
+          <!-- <li class="instruments-list__el">
+          </li> -->
+          <!-- <li class="instruments-list__el">
+          </li> -->
           <hr>
           <li class="instruments-list__el">
             <button
@@ -202,71 +241,92 @@
               data-number="16"
               class="instrument-btn"
               :class="{ 'instrument-btn_active': selectedInstrument === 16}"
+              title="Радиус дуги"
             >
-              Радиус дуги
+            <img
+              src="./assets/arc_radius.svg"
+              alt="arc_radius"/>
             </button>
-          </li>
-          <li class="instruments-list__el">
             <button
               @click="selectInstrument"
               data-number="15"
               class="instrument-btn"
               :class="{ 'instrument-btn_active': selectedInstrument === 15}"
+              title="Длина дуги"
             >
-              Длина дуги
+            <img
+              src="./assets/arc_length.svg"
+              alt="arc_length"/>
             </button>
-          </li>
-          <li class="instruments-list__el">
             <button
               @click="selectInstrument"
               data-number="17"
               class="instrument-btn"
               :class="{ 'instrument-btn_active': selectedInstrument === 17}"
+              title="Угол дуги"
             >
-              Угол дуги
+            <img
+              src="./assets/arc_angle.svg"
+              alt="arc_angle"/>
             </button>
           </li>
+          <!-- <li class="instruments-list__el">
+          </li> -->
+          <!-- <li class="instruments-list__el">
+          </li> -->
           <li class="instruments-list__el">
             <button
               @click="selectInstrument"
               data-number="20"
               class="instrument-btn"
               :class="{ 'instrument-btn_active': selectedInstrument === 20}"
+              title="Касание дуги и отрезка"
             >
-              Касание дуги и отрезка
+            <img
+              src="./assets/arc_tangent_to_line.svg"
+              alt="arc_tangent_to_line"/>
+            </button>
+            <button
+              @click="selectInstrument"
+              data-number="25"
+              class="instrument-btn"
+              :class="{ 'instrument-btn_active': selectedInstrument === 25}"
+              title="Перпендикулярность отрезка к радиусу дуги"
+            >
+            <img
+                src="./assets/arc_line_perpendicular.svg"
+                alt="arc_line_perpendicular"/>
             </button>
           </li>
+          <!-- <li class="instruments-list__el">
+          </li>
+          <li class="instruments-list__el">
+          </li> -->
           <li class="instruments-list__el">
             <button
               @click="selectInstrument"
               data-number="18"
               class="instrument-btn"
               :class="{ 'instrument-btn_active': selectedInstrument === 18}"
+              title="Внешнее касание дуг"
             >
-              Внешнее касание дуг
+            <img
+              src="./assets/arc_tangent_to_arc_outer.svg"
+              alt="arc_tangent_to_arc_outer"/>
             </button>
-          </li>
-          <li class="instruments-list__el">
             <button
               @click="selectInstrument"
               data-number="19"
               class="instrument-btn"
               :class="{ 'instrument-btn_active': selectedInstrument === 19}"
+              title="Внутреннее касание дуг"
             >
-              Внутреннее касание дуг
+            <img
+              src="./assets/arc_tangent_to_arc_inner.svg"
+              alt="arc_tangent_to_arc_inner"/>
             </button>
           </li>
-          <li class="instruments-list__el">
-            <button
-              @click="selectInstrument"
-              data-number="25"
-              class="instrument-btn"
-              :class="{ 'instrument-btn_active': selectedInstrument === 25}"
-            >
-              Перпендикулярность отрезка к радиусу дуги
-            </button>
-          </li>
-          <li class="instruments-list__el">
+          <!-- <li class="instruments-list__el">
             <button
               @click="selectInstrument"
               data-number="21"
@@ -290,6 +350,20 @@
               <del>
                 Фиксация конца дуги
               </del>
+            </button>
+          </li> -->          
+          <hr>
+          <li class="instruments-list__el">
+            <button
+              @click="selectInstrument"
+              data-number="26"
+              class="instrument-btn"
+              :class="{ 'instrument-btn_active': selectedInstrument === 26}"
+              title="Длина полилинии (отрезки/дуги) [Выберите все объекты и нажмите 'Enter']"
+            >
+            <img
+              src="./assets/polyline_length.svg"
+              alt="polyline_length"/>
             </button>
           </li>
         </ul>
@@ -1666,7 +1740,10 @@ html, body {
 }
 
 .instrument-btn {
+  margin: 3px;
+
   border: none;
+  border-radius: 5px;
   outline: none;
   padding: 5px 10px;
   font-size: 14px;
@@ -1687,5 +1764,14 @@ html, body {
       cursor: no-drop;
     }
   }
+
+  img {
+    width: 30px;
+    height: 25px;
+    margin: 4px;
+    border: ridge;
+    border-radius: 4px;
+  }
+
 }
 </style>
